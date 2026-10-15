@@ -1,0 +1,256 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Haxball Lite</title>
+<style>
+:root{--bg:#17181a;--card:#222427;--line:#3b3e43;--fg:#e4e6e8;--mut:#8d9298;--r:#e0473a;--b:#3f86e8;--go:#d8dadd}
+*{box-sizing:border-box;border-radius:0}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;justify-content:center;padding:16px;touch-action:manipulation}
+main{width:100%;max-width:1240px}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;border-bottom:2px solid var(--fg);padding-bottom:8px}h1{font-size:22px;margin:0}
+.card{background:var(--card);border:1px solid var(--line);padding:14px;margin-bottom:12px}
+input,select,button{font:inherit;color:inherit;background:#2c2f33;border:1px solid var(--line);padding:7px 10px}
+button{cursor:pointer}button:hover{background:#383b40}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+button.go{background:var(--go);color:#16171a;border-color:var(--go);font-weight:700}button.go:hover{background:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mut{color:var(--mut)}
+.lob{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.teams{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.teams h3{margin:0 0 6px;font-size:16px;border-bottom:3px solid var(--mut);padding-bottom:4px}.tr h3{border-color:var(--r)}.tb h3{border-color:var(--b)}
+.teams>div>button{margin:8px 8px 0 0}.pl{display:flex;justify-content:space-between;align-items:center;padding:3px 0}.pl .x{padding:0 8px}
+.tabs{display:flex;flex-wrap:wrap;margin-bottom:12px;border-bottom:1px solid var(--line)}.tabs button{border:0;background:none;padding:8px 14px}.tabs button.on{background:var(--go);color:#16171a;font-weight:700}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px 24px;margin:8px 0}
+.kb{display:flex;align-items:center;gap:8px;padding:3px 0}.kb span{flex:1}.kb button{min-width:96px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:10px 0}
+.sgrid label{display:flex;flex-direction:column;gap:4px;font-size:.93em}.sgrid label.chk{flex-direction:row;align-items:center;gap:8px}
+.sgrid input[type=range]{accent-color:var(--go)}output{color:var(--mut)}
+canvas{width:100%;height:auto;max-height:100vh;object-fit:contain;display:block;background:#101113;touch-action:none}
+#pad{position:fixed;inset:0;pointer-events:none;user-select:none;-webkit-user-select:none;--cs:1}
+#pad>*{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;touch-action:none}
+#joy{width:calc(132px*var(--cs));height:calc(132px*var(--cs));background:#ffffff1f;border:2px solid #ffffff55;display:grid;place-items:center}
+#joy i{width:40%;height:40%;background:#ffffff77}
+#pad button{width:calc(64px*var(--cs));height:calc(64px*var(--cs));padding:0;background:#ffffff26;border:2px solid #ffffff55;color:var(--fg);font-weight:700;font-size:calc(12px*var(--cs));touch-action:none}
+#pad button:active{background:#ffffff66}#pad .go{width:calc(92px*var(--cs));height:calc(92px*var(--cs));background:#d8dadd99;color:#111}
+#pad.edit>*{outline:2px dashed #fff;cursor:move}
+#ebar{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:5;display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);padding:8px 12px}
+[hidden]{display:none!important}@media(max-width:640px){.teams{grid-template-columns:1fr}}
+</style></head><body><main>
+<header><h1>Haxball Lite</h1><div class="row"><button id="kb">Settings</button><button id="tog" hidden>Teams and host menu</button><button id="leave" hidden>Leave lobby</button></div></header>
+<div class="card" id="keys" hidden>
+ <div class="tabs"><button data-tab="kb">Keyboard</button><button data-tab="tc">Touch</button><button data-tab="gp">Controller</button><button data-tab="gr">Graphics</button></div>
+ <div id="t_kb"><span class="mut">Click a slot, then press a key. Backspace clears it, Escape cancels.</span><div id="kgrid" class="kgrid"></div><button id="kreset">Reset keyboard</button></div>
+ <div id="t_tc" hidden><div id="tgrid" class="sgrid"></div><div class="row"><button id="tedit" class="go">Edit layout</button><button id="treset">Reset touch settings</button></div></div>
+ <div id="t_gp" hidden><p class="mut" id="gstat"></p><span class="mut">Move with the left stick or D-pad. Click a slot, then press a controller button. Backspace clears it, Escape cancels.</span><div id="ggrid" class="kgrid"></div>
+  <div class="sgrid"><label>Stick deadzone <output></output><input type="range" data-cfg="dz" min="0" max=".6" step=".05"></label></div><button id="greset">Reset controller</button></div>
+ <div id="t_gr" hidden><div id="rgrid" class="sgrid"></div></div>
+</div>
+<div id="menu">
+ <div class="card row"><input id="name" maxlength="16" placeholder="Your name"><span class="mut">Defaults: WASD or arrows move, Space or X kick, Q or E curve kick, Shift sprint, Z ghost. Change controls under Settings.</span></div>
+ <div class="card row"><input id="lname" maxlength="24" placeholder="Lobby name"><select id="mode"><option value="1">1v1</option><option value="2" selected>2v2</option><option value="3">3v3</option></select><select id="size"><option value="0">Small map</option><option value="1" selected>Medium map</option><option value="2">Large map</option></select><button class="go" id="create">Create lobby</button></div>
+ <div class="card"><b>Open lobbies</b><div id="list" class="mut">Connecting...</div></div>
+</div>
+<div id="room" hidden>
+ <div class="card"><div class="row" style="justify-content:space-between"><b id="rtitle"></b><div class="row"><button class="go" id="start">Start match</button><button id="stop">End match</button></div></div>
+  <div class="teams"><div class="tr"><h3>Red</h3><div id="pr"></div><button data-t="r">Join red</button><button data-bot="r">Add bot</button></div>
+  <div><h3>Spectators</h3><div id="ps"></div><button data-t="s">Spectate</button></div>
+  <div class="tb"><h3>Blue</h3><div id="pb"></div><button data-t="b">Join blue</button><button data-bot="b">Add bot</button></div></div>
+  <p class="mut" id="hint"></p></div>
+ <div class="card" id="mod" hidden><b>Host settings</b><div id="modgrid" class="sgrid"></div><div class="row"><button id="mreset">Reset to defaults</button></div><p class="mut">Map size and mode can only change between matches.</p></div>
+</div>
+<div id="game" hidden><canvas id="c" width="920" height="472"></canvas></div>
+<div id="pad" hidden><div id="joy" data-c="joy"><i></i></div><button data-c="q" data-k="q">Curve L</button><button data-c="e" data-k="e">Curve R</button><button data-c="z" data-k="z">Ghost</button><button data-c="s" data-k="s">Sprint</button><button data-c="k" data-k="k" class="go">Kick</button></div>
+<div id="ebar" hidden><span>Drag the controls to move them.</span><button id="ereset">Reset layout</button><button id="edone" class="go">Done</button></div>
+</main><script>
+const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),copy=o=>JSON.parse(JSON.stringify(o));
+const SZ=[[600,300,100],[800,400,130],[1100,550,170]],SN=['Small','Medium','Large'],GD=40,OX=60,PR=15,BR=10;
+const SET=[['sc','Score limit',1,15,1],['tm','Minutes per match',1,10,1],['ps','Player speed',.5,2,.1],['pf','Player friction',.4,2,.1],['pr','Player size',.6,1.6,.1],['kp','Kick power',.5,2,.1],['cv','Curve strength',0,3,.1],['sp','Sprint boost',1,2.5,.1],['sd','Stamina drain (0 = endless)',0,3,.1],['bf','Ball friction',.2,3,.1],['bn','Bounciness',.1,1.2,.1],['br','Ball size',.6,2,.1],['bm','Ball weight',.4,3,.1],['gs','Goal size',.5,2,.1],['gh','Ghost key allowed'],['pc','Player collisions']];
+const ctl=(a,[k,l,mn,mx,st])=>mn===undefined?`<label class="chk"><input type="checkbox" data-${a}="${k}"> ${l}</label>`:`<label>${l} <output></output><input type="range" data-${a}="${k}" min="${mn}" max="${mx}" step="${st}"></label>`;
+const touch=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;
+const CD={cs:1,co:.85,gui:1,tmode:'auto',hide:{},lay:{},res:'auto',fps:0,sm:.6,trail:1,names:1,showfps:0,dz:.15,gb:{k:[0,7],q:[4,-1],e:[5,-1],s:[6,10],z:[2,-1]}};
+const LAY={joy:[16,74],k:[88,76],s:[74,86],z:[88,52],q:[60,86],e:[74,64]};
+let cfg=(()=>{try{return{...copy(CD),...JSON.parse(localStorage.hbCfg)}}catch{return copy(CD)}})();
+const saveCfg=()=>{localStorage.hbCfg=JSON.stringify(cfg)};
+let ws,me=0,lobby=null,snap=null,keys={},last='',disp={},trail=[],panel=false,editing=false,grb=null,curTab=touch?'tc':'kb',gp={x:0,y:0,k:0,q:0,e:0,s:0,z:0};
+const joy={x:0,y:0};
+$('name').value=localStorage.hbName||'';
+const send=m=>ws&&ws.readyState===1&&ws.send(JSON.stringify(m));
+const nm=()=>{const n=$('name').value.trim()||'Player';localStorage.hbName=n;return n};
+const padOn=()=>editing||(!!lobby&&lobby.ph==='play'&&!panel&&(cfg.tmode==='on'||(cfg.tmode==='auto'&&touch)));
+function connect(){
+  ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
+  ws.onclose=()=>{lobby=snap=null;panel=false;show();$('list').textContent='Disconnected. Reconnecting...';setTimeout(connect,1500)};
+  ws.onmessage=e=>{const m=JSON.parse(e.data);({
+    me:()=>{me=m.id},lobbies:()=>showList(m.list),
+    lobby:()=>{if(m.ph!=='play')panel=false;lobby=m;show()},
+    left:()=>{lobby=snap=null;panel=false;show()},
+    s:()=>{snap=m;const[bx,by,sp]=m.b;if(sp){trail.push([bx,by]);if(trail.length>18)trail.shift()}else trail=[]}
+  })[m.t]?.()};
+}
+function showList(l){
+  $('list').innerHTML=l.length?l.map(x=>`<div class="lob"><span>${esc(x.name)} <span class="mut">(${x.mode}v${x.mode}, ${x.n} in lobby, ${x.ph==='play'?'match running':'waiting'})</span></span><button data-j="${x.id}">Join</button></div>`).join(''):'No lobbies yet. Create one above.';
+}
+function buildMod(){
+  $('modgrid').innerHTML='<label>Map size<select data-set="size"><option value="0">Small</option><option value="1">Medium</option><option value="2">Large</option></select></label><label>Mode<select data-set="mode"><option value="1">1v1</option><option value="2">2v2</option><option value="3">3v3</option></select></label>'+SET.map(s=>ctl('set',s)).join('');
+  $('modgrid').onchange=e=>{const t=e.target,k=t.dataset.set;if(k)send({t:'set',k,v:t.type==='checkbox'?+t.checked:t.value})};
+  $('modgrid').oninput=e=>{const o=e.target.parentElement.querySelector('output');if(o)o.textContent=e.target.value};
+  $('mreset').onclick=()=>send({t:'set',k:'reset',v:0});
+}
+function show(){
+  const play=!!lobby&&lobby.ph==='play';
+  $('menu').hidden=!!lobby;$('leave').hidden=!lobby;$('tog').hidden=!play;$('tog').textContent=panel?'Back to match':'Teams and host menu';
+  $('room').hidden=!lobby||(play&&!panel);$('game').hidden=!play||panel;$('pad').hidden=!padOn();
+  if(!lobby)return;
+  if(play&&!panel&&document.activeElement)document.activeElement.blur();
+  const host=lobby.host===me;
+  $('rtitle').textContent=`${lobby.name} (${lobby.mode}v${lobby.mode}, ${SN[lobby.size]} map)`;
+  const row=p=>`<div class="pl"><span>${esc(p.name)}${p.bot?' (bot)':''}${p.id===lobby.host?' (host)':''}${p.id===me?' (you)':''}</span>${host&&p.id!==me?`<button class="x" data-rm="${p.id}">x</button>`:''}</div>`;
+  for(const t of['r','b','s'])$('p'+t).innerHTML=lobby.players.filter(p=>p.team===t).map(row).join('')||'<div class="mut">Empty</div>';
+  document.querySelectorAll('[data-bot]').forEach(b=>b.hidden=!host);
+  $('start').hidden=!host||play;$('stop').hidden=!host||!play;$('mod').hidden=!host;
+  $('hint').textContent=host?'You are the host. Teams can be uneven, and bots count toward team size.':play?'':'Waiting for the host to start.';
+  if(host)$('modgrid').querySelectorAll('[data-set]').forEach(i=>{
+    const k=i.dataset.set,v=k==='size'?lobby.size:k==='mode'?lobby.mode:lobby.set[k];
+    i.disabled=play&&(k==='size'||k==='mode');
+    if(document.activeElement===i)return;
+    if(i.type==='checkbox')i.checked=!!v;else{i.value=v;const o=i.parentElement.querySelector('output');if(o)o.textContent=i.value}
+  });
+}
+$('create').onclick=()=>send({t:'create',name:nm(),lname:$('lname').value,mode:+$('mode').value,size:+$('size').value});
+$('list').onclick=e=>{const j=e.target.dataset.j;if(j)send({t:'join',id:+j,name:nm()})};
+$('room').onclick=e=>{const d=e.target.dataset;if(d.t)send({t:'team',team:d.t});else if(d.bot)send({t:'bot',team:d.bot});else if(d.rm)send({t:'rm',id:+d.rm})};
+$('start').onclick=()=>send({t:'start'});$('stop').onclick=()=>send({t:'stop'});$('leave').onclick=()=>send({t:'leave'});
+$('tog').onclick=()=>{panel=!panel;show()};
+// ---- keyboard binds ----
+const DEFB={l:['KeyA','ArrowLeft'],r:['KeyD','ArrowRight'],u:['KeyW','ArrowUp'],d:['KeyS','ArrowDown'],k:['Space','KeyX'],q:['KeyQ',''],e:['KeyE',''],s:['ShiftLeft','ShiftRight'],z:['KeyZ','']};
+const ACT={l:'Move left',r:'Move right',u:'Move up',d:'Move down',k:'Kick',q:'Curve left',e:'Curve right',s:'Sprint',z:'Ghost (ball passes through you)'};
+const kname=c=>c?c.replace(/^Key|^Digit|^Arrow/,''):'None';
+let binds=(()=>{try{const s=JSON.parse(localStorage.hbBinds),b=copy(DEFB);for(const a in b)if(Array.isArray(s[a]))b[a]=[s[a][0]||'',s[a][1]||''];return b}catch{return copy(DEFB)}})();
+let KM={},rebind=null;
+function mapKeys(){KM={};for(const a in binds)binds[a].forEach(c=>{if(c)KM[c]=a})}
+function saveBinds(){localStorage.hbBinds=JSON.stringify(binds);mapKeys();keys={};sendIn()}
+function setBind(a,i,c){if(c)for(const x in binds)binds[x]=binds[x].map(v=>v===c?'':v);binds[a][i]=c;saveBinds()}
+function buildKeys(){$('kgrid').innerHTML=Object.keys(ACT).map(a=>`<div class="kb"><span>${ACT[a]}</span>${[0,1].map(i=>`<button data-a="${a}" data-i="${i}">${rebind&&rebind.a===a&&rebind.i===i?'Press a key...':kname(binds[a][i])}</button>`).join('')}</div>`).join('')}
+$('kgrid').onclick=e=>{const d=e.target.dataset;if(d.a){e.target.blur();keys={};sendIn();rebind={a:d.a,i:+d.i};buildKeys()}};
+$('kreset').onclick=()=>{binds=copy(DEFB);saveBinds();buildKeys()};
+// ---- controller binds ----
+const GA={k:'Kick',q:'Curve left',e:'Curve right',s:'Sprint',z:'Ghost'};
+const GN=['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-up','D-down','D-left','D-right','Home'];
+const gname=i=>i<0?'None':GN[i]||'Btn '+i;
+function buildGp(){$('ggrid').innerHTML=Object.keys(GA).map(a=>`<div class="kb"><span>${GA[a]}</span>${[0,1].map(i=>`<button data-ga="${a}" data-gi="${i}">${grb&&grb.a===a&&grb.i===i?'Press a button...':gname(cfg.gb[a][i])}</button>`).join('')}</div>`).join('')}
+function setG(a,i,b){if(b>=0)for(const x in cfg.gb)cfg.gb[x]=cfg.gb[x].map(v=>v===b?-1:v);cfg.gb[a][i]=b;saveCfg()}
+$('ggrid').onclick=e=>{const d=e.target.dataset;if(d.ga){e.target.blur();grb={a:d.ga,i:+d.gi,wait:1};buildGp()}};
+$('greset').onclick=()=>{cfg.gb=copy(CD.gb);cfg.dz=CD.dz;saveCfg();buildGp();syncCfg()};
+function pollPad(){
+  const p=navigator.getGamepads?[...navigator.getGamepads()].find(Boolean):null,n={x:0,y:0,k:0,q:0,e:0,s:0,z:0};
+  const txt=!navigator.getGamepads||!isSecureContext?'Controllers need HTTPS or localhost. Open the game over HTTPS to use one.':p?'Connected: '+p.id:'No controller detected. Connect one and press a button.';
+  if($('gstat').textContent!==txt)$('gstat').textContent=txt;
+  if(p){
+    const bt=i=>!!(p.buttons[i]&&p.buttons[i].pressed);
+    if(grb){
+      if(grb.wait){if(!p.buttons.some(b=>b.pressed))grb.wait=0}
+      else{const i=p.buttons.findIndex(b=>b.pressed);if(i>=0){setG(grb.a,grb.i,i);grb=null;buildGp()}}
+    }else for(const a in cfg.gb)n[a]=+cfg.gb[a].some(i=>i>=0&&bt(i));
+    let ax=p.axes[0]||0,ay=p.axes[1]||0;const m=Math.hypot(ax,ay);
+    if(m<cfg.dz){ax=ay=0}else{const s=Math.min(1,(m-cfg.dz)/(1-cfg.dz))/m;ax*=s;ay*=s}
+    n.x=Math.max(-1,Math.min(1,ax+(bt(15)?1:0)-(bt(14)?1:0)));n.y=Math.max(-1,Math.min(1,ay+(bt(13)?1:0)-(bt(12)?1:0)));
+  }
+  gp=n;sendIn();
+}
+// ---- input merge: keyboard + touch + controller ----
+const rn=v=>Math.round(v*100)/100;
+function sendIn(){
+  const kx=(keys.r?1:0)-(keys.l?1:0),ky=(keys.d?1:0)-(keys.u?1:0);
+  const x=kx||rn(joy.x)||rn(gp.x),y=ky||rn(joy.y)||rn(gp.y),k=keys.k||gp.k?1:0,c=(keys.e||gp.e?1:0)-(keys.q||gp.q?1:0),s=keys.s||gp.s?1:0,g=keys.z||gp.z?1:0,str=[x,y,k,c,s,g]+'';
+  if(str!==last){last=str;send({t:'in',x,y,k,c,s,g})}
+}
+onkeydown=onkeyup=e=>{
+  if(grb){if(e.type==='keydown'){e.preventDefault();if(e.code==='Backspace'||e.code==='Delete')setG(grb.a,grb.i,-1);grb=null;buildGp()}return}
+  if(rebind){if(e.type==='keydown'){e.preventDefault();if(e.code!=='Escape')setBind(rebind.a,rebind.i,e.code==='Backspace'||e.code==='Delete'?'':e.code);rebind=null;buildKeys()}return}
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||!KM[e.code])return;
+  e.preventDefault();keys[KM[e.code]]=e.type==='keydown';sendIn()};
+onblur=()=>{keys={};joy.x=joy.y=0;sendIn()};
+// ---- touch pad ----
+const jel=$('joy'),knob=jel.firstElementChild,clampv=v=>Math.max(3,Math.min(97,Math.round(v*10)/10));
+function jmove(e){
+  const r=jel.getBoundingClientRect(),R=r.width/2;let dx=(e.clientX-r.left-R)/R,dy=(e.clientY-r.top-R)/R;const m=Math.hypot(dx,dy);
+  if(m>1){dx/=m;dy/=m}
+  joy.x=m<.15?0:dx;joy.y=m<.15?0:dy;knob.style.transform=`translate(${dx*R*.6}px,${dy*R*.6}px)`;sendIn();
+}
+function applyPad(){
+  const p=$('pad');p.style.setProperty('--cs',cfg.cs);p.style.opacity=cfg.co;
+  p.querySelectorAll('[data-c]').forEach(el=>{const c=el.dataset.c,l=cfg.lay[c]||LAY[c];el.style.left=l[0]+'%';el.style.top=l[1]+'%';el.hidden=!!cfg.hide[c]});
+}
+document.querySelectorAll('#pad [data-c]').forEach(el=>{
+  const c=el.dataset.c,rel=()=>{if(editing){saveCfg();return}if(c==='joy'){joy.x=joy.y=0;knob.style.transform=''}else keys[el.dataset.k]=false;sendIn()};
+  el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);if(editing)return;if(c==='joy')jmove(e);else{keys[el.dataset.k]=true;sendIn()}};
+  el.onpointermove=e=>{if(!el.hasPointerCapture(e.pointerId))return;if(editing){cfg.lay[c]=[clampv(e.clientX/innerWidth*100),clampv(e.clientY/innerHeight*100)];applyPad()}else if(c==='joy')jmove(e)};
+  el.onpointerup=el.onpointercancel=el.onlostpointercapture=rel;
+});
+$('pad').oncontextmenu=e=>e.preventDefault();
+function edit(on){editing=on;$('pad').classList.toggle('edit',on);$('ebar').hidden=!on;if(on)$('keys').hidden=true;applyPad();show()}
+$('tedit').onclick=()=>edit(true);$('edone').onclick=()=>edit(false);
+$('ereset').onclick=()=>{cfg.lay={};saveCfg();applyPad()};
+// ---- settings menu ----
+$('tgrid').innerHTML='<label>Show touch controls<select data-cfg="tmode"><option value="auto">Auto (touch devices)</option><option value="on">Always</option><option value="off">Never</option></select></label>'
+ +[['cs','Control size',.5,2,.05],['co','Control opacity',.2,1,.05],['gui','GUI size',.7,1.6,.05]].map(s=>ctl('cfg',s)).join('')
+ +'<div>Visible buttons'+[['q','Curve left'],['e','Curve right'],['z','Ghost'],['s','Sprint']].map(([c,n])=>`<label class="chk"><input type="checkbox" data-hide="${c}"> ${n}</label>`).join('')+'</div>';
+$('rgrid').innerHTML='<label>Render resolution<select data-cfg="res"><option value="auto">Auto (match screen)</option><option value="0.5">Low (0.5x)</option><option value="1">Standard (1x)</option><option value="2">High (2x)</option><option value="3">Ultra (3x)</option></select></label>'
+ +'<label>Frame limit<select data-cfg="fps"><option value="0">Unlimited</option><option value="60">60 FPS</option><option value="30">30 FPS</option></select></label>'
+ +[['gui','GUI size',.7,1.6,.05],['sm','Movement smoothing',.2,1,.05],['trail','Ball curve trail'],['names','Player names'],['showfps','Show FPS']].map(s=>ctl('cfg',s)).join('');
+function syncCfg(){
+  document.querySelectorAll('[data-cfg]').forEach(i=>{const v=cfg[i.dataset.cfg];if(i.type==='checkbox')i.checked=!!v;else i.value=v;const o=i.parentElement.querySelector('output');if(o)o.textContent=i.value});
+  document.querySelectorAll('[data-hide]').forEach(i=>{i.checked=!cfg.hide[i.dataset.hide]});
+}
+function applyCfg(){document.body.style.fontSize=15*cfg.gui+'px';applyPad()}
+$('keys').oninput=$('keys').onchange=e=>{
+  const t=e.target,k=t.dataset.cfg,h=t.dataset.hide;
+  if(k)cfg[k]=t.type==='checkbox'?+t.checked:(t.tagName==='SELECT'&&isNaN(t.value))?t.value:+t.value;
+  else if(h)cfg.hide[h]=!t.checked;else return;
+  saveCfg();syncCfg();applyCfg();show();
+};
+$('treset').onclick=()=>{Object.assign(cfg,{cs:1,co:.85,gui:1,tmode:'auto',hide:{},lay:{}});saveCfg();syncCfg();applyCfg();show()};
+function showTab(t){curTab=t;document.querySelectorAll('#keys [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));['kb','tc','gp','gr'].forEach(x=>$('t_'+x).hidden=x!==t);if(t==='gp')buildGp()}
+$('keys').onclick=e=>{const d=e.target.dataset;if(d.tab)showTab(d.tab)};
+$('kb').onclick=()=>{const open=$('keys').hidden;$('keys').hidden=!open;rebind=grb=null;if(open){buildKeys();syncCfg();showTab(curTab)}};
+// ---- drawing ----
+const cv=$('c'),cx=cv.getContext('2d');
+const lerp=(id,x,y)=>{const d=disp[id]||(disp[id]={x,y});d.x+=(x-d.x)*cfg.sm;d.y+=(y-d.y)*cfg.sm;return d};
+function circle(x,y,r,fill,stroke,lw){cx.beginPath();cx.arc(x,y,r,0,7);cx.fillStyle=fill;cx.fill();if(stroke){cx.lineWidth=lw;cx.strokeStyle=stroke;cx.stroke()}}
+let lastT=0,fc=0,fpsv=0,fpst=0;
+function draw(t){
+  requestAnimationFrame(draw);pollPad();
+  if(!snap||!lobby||lobby.ph!=='play'||panel)return;
+  if(cfg.fps&&t-lastT<1000/cfg.fps-2)return;
+  lastT=t;if(t-fpst>=1000){fpsv=fc;fc=0;fpst=t}fc++;
+  const S=lobby.set,u=cfg.gui,pr=PR*S.pr,br=BR*S.br,[W,H,G0]=SZ[lobby.size],G=Math.min(G0*S.gs,H-40),y1=(H-G)/2,y2=(H+G)/2;
+  const F=(px,b)=>`${b?'bold ':''}${px*u}px Helvetica,Arial,sans-serif`;
+  const oy=Math.round(36*u),cw=W+2*OX,ch=H+oy+Math.round(26*u);
+  const q=cfg.res==='auto'?Math.min(devicePixelRatio||1,3):+cfg.res,cssW=Math.min(cv.clientWidth,cv.clientHeight*cw/ch)||cw;
+  const sc=Math.min(4096,Math.max(300,cssW*q))/cw,pw=Math.round(cw*sc),ph=Math.round(ch*sc);
+  if(cv.width!==pw||cv.height!==ph){cv.width=pw;cv.height=ph}
+  cx.setTransform(sc,0,0,sc,0,0);cx.clearRect(0,0,cw,ch);cx.save();cx.translate(OX,oy);
+  cx.fillStyle='#464a4f';cx.fillRect(0,0,W,H);
+  cx.fillStyle='#2c2f33';cx.fillRect(-GD,y1,GD,G);cx.fillRect(W,y1,GD,G);
+  cx.strokeStyle='#cfd2d6';cx.lineWidth=2;cx.strokeRect(0,0,W,H);
+  cx.beginPath();cx.moveTo(W/2,0);cx.lineTo(W/2,H);cx.stroke();
+  cx.beginPath();cx.arc(W/2,H/2,60,0,7);cx.stroke();
+  cx.lineWidth=4;cx.strokeStyle='#e0473a';cx.strokeRect(-GD,y1,GD,G);cx.strokeStyle='#3f86e8';cx.strokeRect(W,y1,GD,G);
+  for(const[x,y]of[[0,y1],[0,y2],[W,y1],[W,y2]])circle(x,y,5,'#e4e6e8');
+  if(cfg.trail&&trail.length>1){cx.strokeStyle='#ffffff77';cx.lineWidth=3;cx.beginPath();trail.forEach(([x,y],i)=>i?cx.lineTo(x,y):cx.moveTo(x,y));cx.stroke()}
+  const tm={};lobby.players.forEach(p=>tm[p.id]=p);
+  for(const[id,x,y,f]of snap.p){
+    const d=lerp(id,x,y),pl=tm[id]||{};
+    if(f&2){cx.beginPath();cx.arc(d.x,d.y,pr+4,0,7);cx.strokeStyle='#ffffff88';cx.lineWidth=2;cx.stroke()}
+    cx.globalAlpha=f&4?.35:1;circle(d.x,d.y,pr,pl.team==='b'?'#3f86e8':'#e0473a',f&1?'#fff':'#111',f&1?3:2);cx.globalAlpha=1;
+    if(id===me)circle(d.x,d.y,3,'#fff');
+    if(cfg.names){cx.fillStyle='#e4e6e8';cx.font=F(12);cx.textAlign='center';cx.fillText(pl.name||'',d.x,d.y-pr-6)}
+  }
+  const b=lerp('b',snap.b[0],snap.b[1]);circle(b.x,b.y,br,'#fff','#111',2);
+  cx.restore();
+  const mine=snap.p.find(a=>a[0]===me);
+  if(mine){const by=oy+H+6*u;cx.fillStyle='#2c2f33';cx.fillRect(OX,by,160*u,8*u);cx.fillStyle=mine[4]<.3?'#e0473a':'#cfd2d6';cx.fillRect(OX,by,160*u*mine[4],8*u);
+    cx.fillStyle='#8d9298';cx.font=F(12);cx.textAlign='left';cx.fillText('Sprint',OX+168*u,by+8*u)}
+  const tl=snap.tl;cx.fillStyle='#e4e6e8';cx.font=F(18,1);cx.textAlign='center';
+  cx.fillText(`Red ${snap.s[0]}  -  ${snap.s[1]} Blue      ${Math.floor(tl/60)}:${String(tl%60).padStart(2,'0')}`,cw/2,24*u);
+  if(cfg.showfps){cx.font=F(12);cx.textAlign='left';cx.fillStyle='#8d9298';cx.fillText(fpsv+' FPS',8,14*u)}
+  if(snap.m){cx.font=F(44,1);cx.textAlign='center';cx.fillStyle='#e4e6e8';cx.lineWidth=6;cx.strokeStyle='#000';cx.strokeText(snap.m,cw/2,oy+H/2+14*u);cx.fillText(snap.m,cw/2,oy+H/2+14*u)}
+}
+mapKeys();buildKeys();buildMod();syncCfg();applyCfg();showTab(curTab);connect();requestAnimationFrame(draw);
+</script></body></html>
