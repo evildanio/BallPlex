@@ -1,0 +1,348 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>BallPlexx</title>
+<style>
+:root{--bg:#17181a;--card:#222427;--line:#3b3e43;--fg:#e4e6e8;--mut:#8d9298;--r:#e0473a;--b:#3f86e8;--go:#d8dadd}
+*{box-sizing:border-box;border-radius:0}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;justify-content:center;padding:16px;touch-action:manipulation}
+main{width:100%;max-width:1240px}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;border-bottom:2px solid var(--fg);padding-bottom:8px}h1{font-size:22px;margin:0;letter-spacing:.5px}
+.card{background:var(--card);border:1px solid var(--line);padding:14px;margin-bottom:12px}p{margin:8px 0}
+input,select,button,textarea{font:inherit;color:inherit;background:#2c2f33;border:1px solid var(--line);padding:7px 10px}
+textarea{width:100%;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85em}
+button{cursor:pointer}button:hover,label.btn:hover{background:#383b40}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+button.go{background:var(--go);color:#16171a;border-color:var(--go);font-weight:700}button.go:hover{background:#fff}
+label.btn{cursor:pointer;display:inline-block;background:#2c2f33;border:1px solid var(--line);padding:7px 10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mut{color:var(--mut)}
+.lob{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.teams{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.teams h3{margin:0 0 6px;font-size:16px;border-bottom:3px solid var(--mut);padding-bottom:4px}.tr h3{border-color:var(--r)}.tb h3{border-color:var(--b)}
+.teams>div>button{margin:8px 8px 0 0}.pl{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0}.pl .x{padding:2px 8px}
+.tabs{display:flex;flex-wrap:wrap;margin-bottom:12px;border-bottom:1px solid var(--line)}.tabs button{border:0;background:none;padding:8px 14px}.tabs button.on{background:var(--go);color:#16171a;font-weight:700}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px 24px;margin:8px 0}
+.kb{display:flex;align-items:center;gap:8px;padding:3px 0}.kb span{flex:1}.kb button{min-width:96px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin:10px 0}
+.sgrid label{display:flex;flex-direction:column;gap:4px;font-size:.93em}.sgrid label.chk{flex-direction:row;align-items:center;gap:8px}
+.sgrid input:not([type=range]):not([type=checkbox]):not([type=number]),.sgrid select{width:100%}
+.pair{display:flex;gap:8px;align-items:center}.pair input[type=range]{flex:1;min-width:0;padding:0}.pair input[type=number]{width:76px;flex:none}
+.sgrid input[type=range]{accent-color:var(--go)}
+.sgroup{margin-top:16px}.sgroup h4{margin:0 0 4px;font-size:1em;border-bottom:1px solid var(--line);padding-bottom:4px}
+canvas{width:100%;height:auto;max-height:100vh;object-fit:contain;display:block;background:#101113;touch-action:none}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:20;background:var(--fg);color:#16171a;padding:8px 14px;font-weight:700;max-width:90vw}
+#pad{position:fixed;inset:0;pointer-events:none;user-select:none;-webkit-user-select:none;--cs:1}
+#pad>*{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;touch-action:none}
+#joy{width:calc(132px*var(--cs));height:calc(132px*var(--cs));background:#ffffff1f;border:2px solid #ffffff55;display:grid;place-items:center}
+#joy i{width:40%;height:40%;background:#ffffff77}
+#pad button{width:calc(64px*var(--cs));height:calc(64px*var(--cs));padding:0;background:#ffffff26;border:2px solid #ffffff55;color:var(--fg);font-weight:700;font-size:calc(12px*var(--cs));touch-action:none}
+#pad button:active{background:#ffffff66}#pad .go{width:calc(92px*var(--cs));height:calc(92px*var(--cs));background:#d8dadd99;color:#111}
+#pad.edit>*{outline:2px dashed #fff;cursor:move}
+#ebar{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:5;display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);padding:8px 12px}
+[hidden]{display:none!important}@media(max-width:640px){.teams{grid-template-columns:1fr}}
+</style></head><body><main>
+<header><h1>BallPlexx</h1><div class="row"><button id="kb">Settings</button><button id="tog" hidden>Lobby menu</button><button id="leave" hidden>Leave lobby</button></div></header>
+<div id="toast" role="status" hidden></div>
+<div class="card" id="keys" hidden>
+ <div class="tabs"><button data-tab="kb">Keyboard</button><button data-tab="tc">Touch</button><button data-tab="gp">Controller</button><button data-tab="gr">Graphics</button></div>
+ <div id="t_kb"><p class="mut">Click a slot, then press a key. Backspace clears the slot and Escape cancels.</p><div id="kgrid" class="kgrid"></div><button id="kreset">Reset keyboard</button></div>
+ <div id="t_tc" hidden><div id="tgrid" class="sgrid"></div><div class="row"><button id="tedit" class="go">Edit layout</button><button id="treset">Reset touch settings</button></div></div>
+ <div id="t_gp" hidden><p class="mut" id="gstat"></p><p class="mut">Move with the left stick or the D-pad. Click a slot, then press a controller button. Backspace clears the slot and Escape cancels.</p><div id="ggrid" class="kgrid"></div><div class="sgrid" id="dzgrid"></div><button id="greset">Reset controller</button></div>
+ <div id="t_gr" hidden><div id="rgrid" class="sgrid"></div></div>
+</div>
+<div id="menu">
+ <div class="card"><div class="sgrid"><label>Your name<input id="name" maxlength="16" placeholder="Player"></label></div><p class="mut">Default controls: WASD or arrows to move, Space or X to kick, Q or E to curve, Shift to sprint, Z for ghost. You can change them under Settings.</p></div>
+ <div class="card"><b>Create a lobby</b>
+  <div class="sgrid"><label>Lobby name<input id="lname" maxlength="24" placeholder="My lobby"></label><label>Password (optional)<input id="lpass" type="password" maxlength="32" autocomplete="new-password"></label>
+  <label>Mode<select id="mode"><option value="0">Infinite (inf vs inf)</option><option value="1">1v1</option><option value="2" selected>2v2</option><option value="3">3v3</option></select></label><label>Map<select id="size"></select></label></div>
+  <button class="go" id="create">Create lobby</button></div>
+ <div class="card" id="pwbox" hidden><b id="pwt"></b><div class="row" style="margin-top:8px"><input id="pwin" type="password" maxlength="32" placeholder="Password" autocomplete="new-password"><button class="go" id="pwgo">Join</button><button id="pwx">Cancel</button></div></div>
+ <div class="card"><b>Open lobbies</b><div id="list" class="mut">Connecting...</div></div>
+</div>
+<div id="room" hidden>
+ <div class="card">
+  <div class="row" style="justify-content:space-between"><div><b id="rtitle"></b><div class="mut" id="rsub"></div></div><div class="row"><button class="go" id="start">Start match</button><button id="stop">End match</button></div></div>
+  <div class="teams"><div class="tr"><h3>Red team</h3><div id="pr"></div><button data-t="r">Join red</button><button data-bot="r">Add bot</button></div>
+  <div><h3>Spectators</h3><div id="ps"></div><button data-t="s">Spectate</button></div>
+  <div class="tb"><h3>Blue team</h3><div id="pb"></div><button data-t="b">Join blue</button><button data-bot="b">Add bot</button></div></div>
+  <p class="mut" id="hint"></p></div>
+ <div class="card" id="mod" hidden>
+  <b>Host settings</b>
+  <div id="modgrid"></div>
+  <div class="sgroup"><h4>Lobby password</h4><div class="row"><input id="hpass" maxlength="32" placeholder="No password"><button id="hpset">Set password</button><button id="hpclear">Remove password</button></div></div>
+  <div class="sgroup"><h4>Presets, import and export</h4>
+   <div class="row"><input id="pname" maxlength="30" placeholder="Preset name"><button id="psave">Save current settings</button></div>
+   <div class="row" style="margin-top:8px"><select id="plist"></select><button id="pload">Load</button><button id="pdel">Delete</button></div>
+   <div class="row" style="margin:8px 0"><button id="pexp">Export</button><button id="pimp">Import from text</button><label class="btn">Import from file<input id="pfile" type="file" accept=".json,application/json" hidden></label></div>
+   <textarea id="ptext" rows="5" placeholder="Exported settings appear here. Paste settings here and press Import from text to apply them."></textarea></div>
+  <div class="row" style="margin-top:12px"><button id="mreset">Reset settings to defaults</button></div>
+  <p class="mut">Map and mode only change between matches. Presets are stored in this browser.</p>
+ </div>
+</div>
+<div id="game" hidden><canvas id="c" width="920" height="472"></canvas></div>
+<div id="pad" hidden><div id="joy" data-c="joy"><i></i></div><button data-c="q" data-k="q">Curve L</button><button data-c="e" data-k="e">Curve R</button><button data-c="z" data-k="z">Ghost</button><button data-c="s" data-k="s">Sprint</button><button data-c="k" data-k="k" class="go">Kick</button></div>
+<div id="ebar" hidden><span>Drag the controls to move them.</span><button id="ereset">Reset layout</button><button id="edone" class="go">Done</button></div>
+</main><script>
+const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),copy=o=>JSON.parse(JSON.stringify(o));
+for(const k of['Cfg','Binds','Name'])if(localStorage['hb'+k]&&!localStorage['bp'+k])localStorage['bp'+k]=localStorage['hb'+k];   // keep settings saved before the rename
+const GD=40,OX=60,PR=15,BR=10,mname=m=>m?m+'v'+m:'inf vs inf',cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const mapOpts=()=>MAPS.map((x,i)=>`<option value="${i}">${esc(x.n)}</option>`).join('');
+const SETG=[
+ ['Match',[['sc','Score limit (goals)',1,15,1],['tm','Match length (minutes)',1,10,1],['bl','Bot difficulty (1 easy, 10 hard)',1,10,1],['gh','Allow ghost mode']]],
+ ['Players',[['ps','Speed (x)',.5,2,.1],['pf','Friction (higher = less sliding)',.4,3,.1],['pr','Size (x)',.6,1.6,.1],['sp','Sprint boost (x)',1,2.5,.1],['sd','Stamina drain (0 = endless)',0,3,.1],['kp','Kick power (x)',.5,2,.1],['cv','Curve strength (x)',0,3,.1],['pc','Players collide with each other'],['pw','Players can pass through walls']]],
+ ['Ball and goals',[['bf','Ball friction (higher = slows faster)',.2,3,.1],['bn','Bounciness',.1,1.2,.1],['br','Ball size (x)',.6,2,.1],['bm','Ball weight (x)',.4,3,.1],['gs','Goal size (x)',.5,2,.1]]]];
+const ctl=(a,[k,l,mn,mx,st])=>mn===undefined?`<label class="chk"><input type="checkbox" data-${a}="${k}"> ${l}</label>`:`<label>${l}<span class="pair"><input type="range" data-${a}="${k}" min="${mn}" max="${mx}" step="${st}"><input type="number" data-${a}="${k}" min="${mn}" max="${mx}" step="${st}"></span></label>`;
+const readVal=t=>{if(t.type==='checkbox')return +t.checked;if(t.tagName==='SELECT')return isNaN(t.value)?t.value:+t.value;const v=parseFloat(t.value);return Number.isFinite(v)?cl(v,+t.min,+t.max):undefined};
+const touch=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;
+const CD={cs:1,co:.85,gui:1,tmode:'auto',hide:{},lay:{},res:'auto',fps:0,sm:.6,cam:'ball',zoom:1,trail:1,names:1,showfps:0,dz:.15,gb:{k:[0,7],q:[4,-1],e:[5,-1],s:[6,10],z:[2,-1]}};
+const LAY={joy:[16,74],k:[88,76],s:[74,86],z:[88,52],q:[60,86],e:[74,64]};
+let cfg=(()=>{try{return{...copy(CD),...JSON.parse(localStorage.bpCfg)}}catch{return copy(CD)}})();
+const saveCfg=()=>{localStorage.bpCfg=JSON.stringify(cfg)};
+let MAPS=[],cam={x:0,y:0,k:''},ws,me=0,lobby=null,snap=null,keys={},last='',disp={},trail=[],panel=false,editing=false,grb=null,curTab=touch?'tc':'kb',toastT=0,joining=0,gp={x:0,y:0,k:0,q:0,e:0,s:0,z:0};
+const joy={x:0,y:0};
+$('name').value=localStorage.bpName||'';
+const send=m=>ws&&ws.readyState===1&&ws.send(JSON.stringify(m));
+const nm=()=>{const n=$('name').value.trim()||'Player';localStorage.bpName=n;return n};
+const padOn=()=>editing||(!!lobby&&lobby.ph==='play'&&!panel&&(cfg.tmode==='on'||(cfg.tmode==='auto'&&touch)));
+function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},3500)}
+function connect(){
+  ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
+  ws.onclose=()=>{lobby=snap=null;panel=false;show();$('list').textContent='Disconnected. Reconnecting...';setTimeout(connect,1500)};
+  ws.onmessage=e=>{const m=JSON.parse(e.data);({
+    me:()=>{me=m.id;MAPS=m.maps;$('size').innerHTML=mapOpts();$('size').value=1;buildMod();show()},lobbies:()=>showList(m.list),
+    lobby:()=>{if(m.ph!=='play')panel=false;lobby=m;show()},
+    err:()=>toast(m.msg),
+    left:()=>{lobby=snap=null;panel=false;show()},
+    s:()=>{snap=m;const[bx,by,sp]=m.b;if(sp){trail.push([bx,by]);if(trail.length>18)trail.shift()}else trail=[]}
+  })[m.t]?.()};
+}
+function showList(l){
+  $('list').innerHTML=l.length?l.map(x=>`<div class="lob"><span><b>${esc(x.name)}</b> <span class="mut">${mname(x.mode)}, ${x.n} player${x.n===1?'':'s'}, ${x.ph==='play'?'match in progress':'waiting'}${x.lock?', password protected':''}</span></span><button data-j="${x.id}" data-l="${x.lock?1:''}" data-n="${esc(x.name)}">Join</button></div>`).join(''):'No lobbies yet. Create one above.';
+}
+function buildMod(){
+  const mode='<label>Mode<select data-set="mode"><option value="0">Infinite (inf vs inf)</option><option value="1">1v1</option><option value="2">2v2</option><option value="3">3v3</option></select></label>';
+  $('modgrid').innerHTML=SETG.map(([t,items],gi)=>`<div class="sgroup"><h4>${t}</h4><div class="sgrid">${gi?'':'<label>Map<select data-set="size">'+mapOpts()+'</select></label>'+mode}${items.map(s=>ctl('set',s)).join('')}</div></div>`).join('');
+  $('modgrid').oninput=e=>{const t=e.target;if(t.type==='range'&&t.nextElementSibling)t.nextElementSibling.value=t.value};
+  $('modgrid').onchange=e=>{
+    const t=e.target,k=t.dataset.set;if(!k)return;
+    const v=readVal(t);if(v===undefined){show();return}
+    if(t.type==='number'){t.value=v;if(t.previousElementSibling)t.previousElementSibling.value=v}
+    send({t:'set',k,v});
+  };
+}
+function show(){
+  const play=!!lobby&&lobby.ph==='play';
+  $('menu').hidden=!!lobby;if(lobby){$('pwbox').hidden=true;$('pwin').value=''}$('leave').hidden=!lobby;$('tog').hidden=!play;$('tog').textContent=panel?'Back to match':'Lobby menu';
+  $('room').hidden=!lobby||(play&&!panel);$('game').hidden=!play||panel;$('pad').hidden=!padOn();
+  if(!lobby)return;
+  if(play&&!panel&&document.activeElement)document.activeElement.blur();
+  const host=lobby.host===me,mp=MAPS[lobby.size]||{};
+  $('rtitle').textContent=lobby.name;$('rsub').textContent=`${mname(lobby.mode)} on ${mp.n}${lobby.pw!==undefined&&lobby.pw?', password protected':''}`;
+  const row=p=>`<div class="pl"><span>${esc(p.name)}${p.bot?' (bot)':''}${p.id===lobby.host?' (host)':''}${p.id===me?' (you)':''}</span>${host&&p.id!==me?`<button class="x" data-rm="${p.id}">${p.bot?'Remove':'Kick'}</button>`:''}</div>`;
+  for(const t of['r','b','s'])$('p'+t).innerHTML=lobby.players.filter(p=>p.team===t).map(row).join('')||'<div class="mut">Empty</div>';
+  document.querySelectorAll('[data-bot]').forEach(b=>{b.hidden=!host});
+  $('start').hidden=!host||play;$('stop').hidden=!host||!play;$('mod').hidden=!host;
+  $('hint').textContent=host?'You are the host. Teams can be uneven, and bots count toward the team size.':play?'The match is in progress.':'Waiting for the host to start the match.';
+  if(host&&document.activeElement!==$('hpass'))$('hpass').value=lobby.pw||'';
+  if(host)$('modgrid').querySelectorAll('[data-set]').forEach(i=>{
+    const k=i.dataset.set,v=k==='size'?lobby.size:k==='mode'?lobby.mode:lobby.set[k];
+    i.disabled=play&&(k==='size'||k==='mode');
+    if(document.activeElement===i)return;
+    if(i.type==='checkbox')i.checked=!!v;else i.value=v;
+  });
+}
+$('create').onclick=()=>send({t:'create',name:nm(),lname:$('lname').value,mode:+$('mode').value,size:+$('size').value,pass:$('lpass').value});
+$('list').onclick=e=>{const d=e.target.dataset;if(!d.j)return;if(d.l){joining=+d.j;$('pwt').textContent='Password for '+d.n;$('pwin').value='';$('pwbox').hidden=false;$('pwin').focus()}else send({t:'join',id:+d.j,name:nm()})};
+$('pwgo').onclick=()=>send({t:'join',id:joining,name:nm(),pass:$('pwin').value});
+$('pwx').onclick=()=>{$('pwbox').hidden=true};
+$('pwin').onkeydown=e=>{if(e.key==='Enter')$('pwgo').click()};
+$('room').onclick=e=>{const d=e.target.dataset;if(d.t)send({t:'team',team:d.t});else if(d.bot)send({t:'bot',team:d.bot});else if(d.rm)send({t:'rm',id:+d.rm})};
+$('start').onclick=()=>send({t:'start'});$('stop').onclick=()=>send({t:'stop'});$('leave').onclick=()=>send({t:'leave'});
+$('tog').onclick=()=>{panel=!panel;show()};
+$('hpset').onclick=()=>{const v=$('hpass').value;send({t:'set',k:'pass',v});toast(v?'Password set.':'Password removed.')};
+$('hpclear').onclick=()=>{$('hpass').value='';send({t:'set',k:'pass',v:''});toast('Password removed.')};
+$('hpass').onkeydown=e=>{if(e.key==='Enter')$('hpset').click()};
+$('mreset').onclick=()=>send({t:'set',k:'reset',v:0});
+// ---- host presets: save, load, import, export ----
+const getPre=()=>{try{return JSON.parse(localStorage.bpPresets)||{}}catch{return{}}};
+function fillPre(sel){const ks=Object.keys(getPre());$('plist').innerHTML=ks.length?ks.map(k=>`<option>${esc(k)}</option>`).join(''):'<option value="">No saved presets</option>';if(sel)$('plist').value=sel}
+const curPre=()=>({game:'ballplexx',v:1,map:(MAPS[lobby.size]||{}).n,mode:lobby.mode,set:copy(lobby.set)});
+function applyPre(p){
+  if(!p||typeof p.set!=='object'||!p.set){toast('That is not a valid BallPlexx settings file.');return}
+  send({t:'preset',set:p.set,map:p.map,mode:p.mode});toast(lobby&&lobby.ph==='play'?'Settings applied. Map and mode change between matches.':'Settings applied.');
+}
+$('psave').onclick=()=>{const n=$('pname').value.trim().slice(0,30);if(!n){toast('Enter a name for the preset.');return}const p=getPre();p[n]=curPre();localStorage.bpPresets=JSON.stringify(p);fillPre(n);toast(`Saved preset "${n}".`)};
+$('pload').onclick=()=>{const p=getPre()[$('plist').value];if(!p){toast('No preset selected.');return}applyPre(p)};
+$('pdel').onclick=()=>{const k=$('plist').value,p=getPre();if(k in p){delete p[k];localStorage.bpPresets=JSON.stringify(p);fillPre();toast(`Deleted preset "${k}".`)}};
+$('pexp').onclick=()=>{
+  const j=JSON.stringify(curPre(),null,2);$('ptext').value=j;
+  if(navigator.clipboard)navigator.clipboard.writeText(j).catch(()=>{});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([j],{type:'application/json'}));a.download='ballplexx-settings.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('Exported. The settings are in the text box and downloaded as a file.');
+};
+$('pimp').onclick=()=>{try{applyPre(JSON.parse($('ptext').value))}catch{toast('That is not valid JSON.')}};
+$('pfile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('ptext').value=r.result;try{applyPre(JSON.parse(r.result))}catch{toast('That is not valid JSON.')}};r.readAsText(f);e.target.value=''};
+// ---- keyboard binds ----
+const DEFB={l:['KeyA','ArrowLeft'],r:['KeyD','ArrowRight'],u:['KeyW','ArrowUp'],d:['KeyS','ArrowDown'],k:['Space','KeyX'],q:['KeyQ',''],e:['KeyE',''],s:['ShiftLeft','ShiftRight'],z:['KeyZ','']};
+const ACT={l:'Move left',r:'Move right',u:'Move up',d:'Move down',k:'Kick',q:'Curve left',e:'Curve right',s:'Sprint',z:'Ghost'};
+const kname=c=>c?c.replace(/^Key|^Digit|^Arrow/,''):'None';
+let binds=(()=>{try{const s=JSON.parse(localStorage.bpBinds),b=copy(DEFB);for(const a in b)if(Array.isArray(s[a]))b[a]=[s[a][0]||'',s[a][1]||''];return b}catch{return copy(DEFB)}})();
+let KM={},rebind=null;
+function mapKeys(){KM={};for(const a in binds)binds[a].forEach(c=>{if(c)KM[c]=a})}
+function saveBinds(){localStorage.bpBinds=JSON.stringify(binds);mapKeys();keys={};sendIn()}
+function setBind(a,i,c){if(c)for(const x in binds)binds[x]=binds[x].map(v=>v===c?'':v);binds[a][i]=c;saveBinds()}
+function buildKeys(){$('kgrid').innerHTML=Object.keys(ACT).map(a=>`<div class="kb"><span>${ACT[a]}</span>${[0,1].map(i=>`<button data-a="${a}" data-i="${i}">${rebind&&rebind.a===a&&rebind.i===i?'Press a key...':kname(binds[a][i])}</button>`).join('')}</div>`).join('')}
+$('kgrid').onclick=e=>{const d=e.target.dataset;if(d.a){e.target.blur();keys={};sendIn();rebind={a:d.a,i:+d.i};buildKeys()}};
+$('kreset').onclick=()=>{binds=copy(DEFB);saveBinds();buildKeys()};
+// ---- controller binds ----
+const GA={k:'Kick',q:'Curve left',e:'Curve right',s:'Sprint',z:'Ghost'};
+const GN=['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-up','D-down','D-left','D-right','Home'];
+const gname=i=>i<0?'None':GN[i]||'Button '+i;
+function buildGp(){$('ggrid').innerHTML=Object.keys(GA).map(a=>`<div class="kb"><span>${GA[a]}</span>${[0,1].map(i=>`<button data-ga="${a}" data-gi="${i}">${grb&&grb.a===a&&grb.i===i?'Press a button...':gname(cfg.gb[a][i])}</button>`).join('')}</div>`).join('')}
+function setG(a,i,b){if(b>=0)for(const x in cfg.gb)cfg.gb[x]=cfg.gb[x].map(v=>v===b?-1:v);cfg.gb[a][i]=b;saveCfg()}
+$('ggrid').onclick=e=>{const d=e.target.dataset;if(d.ga){e.target.blur();grb={a:d.ga,i:+d.gi,wait:1};buildGp()}};
+$('greset').onclick=()=>{cfg.gb=copy(CD.gb);cfg.dz=CD.dz;saveCfg();buildGp();syncCfg()};
+function pollPad(){
+  const p=navigator.getGamepads?[...navigator.getGamepads()].find(Boolean):null,n={x:0,y:0,k:0,q:0,e:0,s:0,z:0};
+  const txt=!navigator.getGamepads||!isSecureContext?'Controllers need HTTPS or localhost. Open the game over HTTPS to use one.':p?'Connected: '+p.id:'No controller detected. Connect one and press a button.';
+  if($('gstat').textContent!==txt)$('gstat').textContent=txt;
+  if(p){
+    const bt=i=>!!(p.buttons[i]&&p.buttons[i].pressed);
+    if(grb){
+      if(grb.wait){if(!p.buttons.some(b=>b.pressed))grb.wait=0}
+      else{const i=p.buttons.findIndex(b=>b.pressed);if(i>=0){setG(grb.a,grb.i,i);grb=null;buildGp()}}
+    }else for(const a in cfg.gb)n[a]=+cfg.gb[a].some(i=>i>=0&&bt(i));
+    let ax=p.axes[0]||0,ay=p.axes[1]||0;const m=Math.hypot(ax,ay);
+    if(m<cfg.dz){ax=ay=0}else{const s=Math.min(1,(m-cfg.dz)/(1-cfg.dz))/m;ax*=s;ay*=s}
+    n.x=cl(ax+(bt(15)?1:0)-(bt(14)?1:0),-1,1);n.y=cl(ay+(bt(13)?1:0)-(bt(12)?1:0),-1,1);
+  }
+  gp=n;sendIn();
+}
+// ---- input merge: keyboard, touch and controller ----
+const rn=v=>Math.round(v*100)/100;
+function sendIn(){
+  const kx=(keys.r?1:0)-(keys.l?1:0),ky=(keys.d?1:0)-(keys.u?1:0);
+  const x=kx||rn(joy.x)||rn(gp.x),y=ky||rn(joy.y)||rn(gp.y),k=keys.k||gp.k?1:0,c=(keys.e||gp.e?1:0)-(keys.q||gp.q?1:0),s=keys.s||gp.s?1:0,g=keys.z||gp.z?1:0,str=[x,y,k,c,s,g]+'';
+  if(str!==last){last=str;send({t:'in',x,y,k,c,s,g})}
+}
+onkeydown=onkeyup=e=>{
+  if(grb){if(e.type==='keydown'){e.preventDefault();if(e.code==='Backspace'||e.code==='Delete')setG(grb.a,grb.i,-1);grb=null;buildGp()}return}
+  if(rebind){if(e.type==='keydown'){e.preventDefault();if(e.code!=='Escape')setBind(rebind.a,rebind.i,e.code==='Backspace'||e.code==='Delete'?'':e.code);rebind=null;buildKeys()}return}
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||!KM[e.code])return;
+  e.preventDefault();keys[KM[e.code]]=e.type==='keydown';sendIn()};
+onblur=()=>{keys={};joy.x=joy.y=0;sendIn()};
+// ---- touch pad ----
+const jel=$('joy'),knob=jel.firstElementChild,clampv=v=>cl(Math.round(v*10)/10,3,97);
+function jmove(e){
+  const r=jel.getBoundingClientRect(),R=r.width/2;let dx=(e.clientX-r.left-R)/R,dy=(e.clientY-r.top-R)/R;const m=Math.hypot(dx,dy);
+  if(m>1){dx/=m;dy/=m}
+  joy.x=m<.15?0:dx;joy.y=m<.15?0:dy;knob.style.transform=`translate(${dx*R*.6}px,${dy*R*.6}px)`;sendIn();
+}
+function applyPad(){
+  const p=$('pad');p.style.setProperty('--cs',cfg.cs);p.style.opacity=cfg.co;
+  p.querySelectorAll('[data-c]').forEach(el=>{const c=el.dataset.c,l=cfg.lay[c]||LAY[c];el.style.left=l[0]+'%';el.style.top=l[1]+'%';el.hidden=!!cfg.hide[c]});
+}
+document.querySelectorAll('#pad [data-c]').forEach(el=>{
+  const c=el.dataset.c,rel=()=>{if(editing){saveCfg();return}if(c==='joy'){joy.x=joy.y=0;knob.style.transform=''}else keys[el.dataset.k]=false;sendIn()};
+  el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);if(editing)return;if(c==='joy')jmove(e);else{keys[el.dataset.k]=true;sendIn()}};
+  el.onpointermove=e=>{if(!el.hasPointerCapture(e.pointerId))return;if(editing){cfg.lay[c]=[clampv(e.clientX/innerWidth*100),clampv(e.clientY/innerHeight*100)];applyPad()}else if(c==='joy')jmove(e)};
+  el.onpointerup=el.onpointercancel=el.onlostpointercapture=rel;
+});
+$('pad').oncontextmenu=e=>e.preventDefault();
+function edit(on){editing=on;$('pad').classList.toggle('edit',on);$('ebar').hidden=!on;if(on)$('keys').hidden=true;applyPad();show()}
+$('tedit').onclick=()=>edit(true);$('edone').onclick=()=>edit(false);
+$('ereset').onclick=()=>{cfg.lay={};saveCfg();applyPad()};
+// ---- settings menu ----
+$('tgrid').innerHTML='<label>Show touch controls<select data-cfg="tmode"><option value="auto">Automatic (touch devices only)</option><option value="on">Always</option><option value="off">Never</option></select></label>'
+ +[['cs','Control size (x)',.5,2,.05],['co','Control opacity (0.2 to 1)',.2,1,.05]].map(s=>ctl('cfg',s)).join('')
+ +'<div>Buttons to show'+[['q','Curve left'],['e','Curve right'],['z','Ghost'],['s','Sprint']].map(([c,n])=>`<label class="chk"><input type="checkbox" data-hide="${c}"> ${n}</label>`).join('')+'</div>';
+$('rgrid').innerHTML='<label>Render resolution<select data-cfg="res"><option value="auto">Automatic (match screen)</option><option value="0.5">Low (0.5x)</option><option value="1">Standard (1x)</option><option value="2">High (2x)</option><option value="3">Ultra (3x)</option></select></label>'
+ +'<label>Frame limit<select data-cfg="fps"><option value="0">Unlimited</option><option value="60">60 FPS</option><option value="30">30 FPS</option></select></label>'
+ +'<label>Camera on big maps<select data-cfg="cam"><option value="ball">Follow the ball and keep me in view</option><option value="me">Follow me</option></select></label>'
+ +[['gui','GUI size (x)',.7,1.6,.05],['zoom','Zoom on big maps (x)',.6,1.6,.05],['sm','Movement smoothing (1 = off)',.2,1,.05],['trail','Show ball curve trail'],['names','Show player names'],['showfps','Show FPS counter']].map(s=>ctl('cfg',s)).join('');
+$('dzgrid').innerHTML=ctl('cfg',['dz','Stick deadzone',0,.6,.05]);
+function syncCfg(){
+  document.querySelectorAll('[data-cfg]').forEach(i=>{const v=cfg[i.dataset.cfg];if(i.type==='checkbox')i.checked=!!v;else i.value=v});
+  document.querySelectorAll('[data-hide]').forEach(i=>{i.checked=!cfg.hide[i.dataset.hide]});
+}
+function applyCfg(){document.body.style.fontSize=15*cfg.gui+'px';applyPad()}
+$('keys').oninput=$('keys').onchange=e=>{
+  const t=e.target,k=t.dataset.cfg,h=t.dataset.hide;
+  if(k){
+    if(t.type==='number'&&e.type==='input')return;
+    const v=readVal(t);if(v===undefined){syncCfg();return}
+    cfg[k]=v;
+  }else if(h)cfg.hide[h]=!t.checked;else return;
+  saveCfg();syncCfg();applyCfg();show();
+};
+$('treset').onclick=()=>{Object.assign(cfg,{cs:1,co:.85,tmode:'auto',hide:{},lay:{}});saveCfg();syncCfg();applyCfg();show()};
+function showTab(t){curTab=t;document.querySelectorAll('#keys [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));['kb','tc','gp','gr'].forEach(x=>{$('t_'+x).hidden=x!==t});if(t==='gp')buildGp()}
+$('keys').onclick=e=>{const d=e.target.dataset;if(d.tab)showTab(d.tab)};
+$('kb').onclick=()=>{const open=$('keys').hidden;$('keys').hidden=!open;rebind=grb=null;if(open){buildKeys();syncCfg();showTab(curTab)}};
+// ---- drawing ----
+const cv=$('c'),cx=cv.getContext('2d');
+const lerp=(id,x,y)=>{const d=disp[id]||(disp[id]={x,y});d.x+=(x-d.x)*cfg.sm;d.y+=(y-d.y)*cfg.sm;return d};
+function circle(x,y,r,fill,stroke,lw){cx.beginPath();cx.arc(x,y,r,0,7);cx.fillStyle=fill;cx.fill();if(stroke){cx.lineWidth=lw;cx.strokeStyle=stroke;cx.stroke()}}
+let lastT=0,fc=0,fpsv=0,fpst=0;
+function draw(t){
+  requestAnimationFrame(draw);pollPad();
+  if(!snap||!lobby||lobby.ph!=='play'||panel||!MAPS[lobby.size])return;
+  if(cfg.fps&&t-lastT<1000/cfg.fps-2)return;
+  lastT=t;if(t-fpst>=1000){fpsv=fc;fc=0;fpst=t}fc++;
+  const S=lobby.set,u=cfg.gui,pr=PR*S.pr,br=BR*S.br,m=MAPS[lobby.size],W=m.W,H=m.H,G=Math.min(m.G*S.gs,H-40),y1=(H-G)/2,y2=(H+G)/2;
+  const F=(px,b)=>`${b?'bold ':''}${px*u}px Helvetica,Arial,sans-serif`;
+  const MY=Math.round(Math.max(52,56*u)),mw=W+2*OX,mh=H+2*MY,vw=Math.min(mw,1100/cfg.zoom),vh=Math.min(mh,620/cfg.zoom);
+  const q=cfg.res==='auto'?Math.min(devicePixelRatio||1,3):+cfg.res,cssW=Math.min(cv.clientWidth,cv.clientHeight*vw/vh)||vw;
+  const sc=Math.min(4096,Math.max(300,cssW*q))/vw,pw=Math.round(vw*sc),ph=Math.round(vh*sc);
+  if(cv.width!==pw||cv.height!==ph){cv.width=pw;cv.height=ph}
+  const pos={};for(const[id,x,y]of snap.p)pos[id]=lerp(id,x,y);
+  const bp=lerp('b',snap.b[0],snap.b[1]),md=pos[me];
+  let tx=W/2,ty=H/2;
+  if(vw<mw||vh<mh){
+    tx=bp.x;ty=bp.y;
+    if(md){if(cfg.cam==='me'){tx=md.x;ty=md.y}else{const ax=vw/2-110,ay=vh/2-110;tx=cl(bp.x,md.x-ax,md.x+ax);ty=cl(bp.y,md.y-ay,md.y+ay)}}
+  }
+  const ck=lobby.size+':'+cfg.zoom;if(cam.k!==ck){cam.k=ck;cam.x=tx;cam.y=ty}
+  cam.x+=(tx-cam.x)*.2;cam.y+=(ty-cam.y)*.2;
+  const ccx=vw>=mw?W/2:cl(cam.x,vw/2-OX,W+OX-vw/2),ccy=vh>=mh?H/2:cl(cam.y,vh/2-MY,H+MY-vh/2);
+  cx.setTransform(sc,0,0,sc,0,0);cx.clearRect(0,0,vw,vh);cx.lineJoin='round';cx.save();cx.translate(vw/2-ccx,vh/2-ccy);
+  cx.fillStyle='#464a4f';
+  if(m.shape==='circle'){cx.beginPath();cx.arc(m.R,m.R,m.R,0,7);cx.fill()}else cx.fillRect(0,0,W,H);
+  cx.fillStyle='#2c2f33';cx.fillRect(-GD,y1,GD,G);cx.fillRect(W,y1,GD,G);
+  cx.strokeStyle='#cfd2d6';cx.lineWidth=2;
+  if(m.shape==='circle'){const a=Math.asin(Math.min(1,G/2/m.R));cx.beginPath();cx.arc(m.R,m.R,m.R,a,Math.PI-a);cx.stroke();cx.beginPath();cx.arc(m.R,m.R,m.R,Math.PI+a,2*Math.PI-a);cx.stroke()}
+  else cx.strokeRect(0,0,W,H);
+  cx.beginPath();cx.moveTo(W/2,0);cx.lineTo(W/2,H);cx.stroke();
+  cx.beginPath();cx.arc(W/2,H/2,60,0,7);cx.stroke();
+  cx.lineWidth=4;cx.strokeStyle='#e0473a';cx.strokeRect(-GD,y1,GD,G);cx.strokeStyle='#3f86e8';cx.strokeRect(W,y1,GD,G);
+  for(const[x,y]of[[0,y1],[0,y2],[W,y1],[W,y2]])circle(x,y,5,'#e4e6e8');
+  for(const[ox,oy,rr,oe]of m.obs||[])circle(ox,oy,rr,oe?'#5b6068':'#2c2f33','#cfd2d6',3);
+  if(cfg.trail&&trail.length>1){cx.strokeStyle='#ffffff77';cx.lineWidth=3;cx.beginPath();trail.forEach(([x,y],i)=>i?cx.lineTo(x,y):cx.moveTo(x,y));cx.stroke()}
+  const tm={};lobby.players.forEach(p=>{tm[p.id]=p});
+  for(const[id,,,f]of snap.p){
+    const d=pos[id],pl=tm[id]||{};
+    if(f&2){cx.beginPath();cx.arc(d.x,d.y,pr+4,0,7);cx.strokeStyle='#ffffff88';cx.lineWidth=2;cx.stroke()}
+    cx.globalAlpha=f&4?.35:1;circle(d.x,d.y,pr,pl.team==='b'?'#3f86e8':'#e0473a',f&1?'#fff':'#111',f&1?3:2);cx.globalAlpha=1;
+    if(id===me)circle(d.x,d.y,3,'#fff');
+    if(cfg.names){cx.font=F(12);cx.textAlign='center';cx.lineWidth=3;cx.strokeStyle='#000c';cx.strokeText(pl.name||'',d.x,d.y-pr-6);cx.fillStyle='#fff';cx.fillText(pl.name||'',d.x,d.y-pr-6)}
+  }
+  circle(bp.x,bp.y,br,'#fff','#111',2);
+  cx.restore();
+  // stamina bar
+  const mine=snap.p.find(a=>a[0]===me);
+  if(mine){const bx=14,by=vh-16*u;cx.fillStyle='#2c2f33';cx.fillRect(bx,by,160*u,8*u);cx.fillStyle=mine[4]<.3?'#e0473a':'#cfd2d6';cx.fillRect(bx,by,160*u*mine[4],8*u);
+    cx.fillStyle='#cfd2d6';cx.font=F(12);cx.textAlign='left';cx.fillText('Stamina',bx+168*u,by+8*u)}
+  // scoreboard: red score, time and blue score on solid blocks
+  const tl=snap.tl,sw=96*u,tw=92*u,sh=36*u,x0=vw/2-sw-tw/2,y0=8*u,my=y0+sh/2+1;
+  cx.fillStyle='#b8332a';cx.fillRect(x0,y0,sw,sh);cx.fillStyle='#111';cx.fillRect(x0+sw,y0,tw,sh);cx.fillStyle='#2d66bf';cx.fillRect(x0+sw+tw,y0,sw,sh);
+  cx.strokeStyle='#e4e6e8';cx.lineWidth=1.5;cx.strokeRect(x0,y0,2*sw+tw,sh);
+  cx.textBaseline='middle';cx.fillStyle='#fff';
+  cx.font=F(11,1);cx.textAlign='left';cx.fillText('RED',x0+8*u,my);cx.textAlign='right';cx.fillText('BLUE',x0+2*sw+tw-8*u,my);
+  cx.font=F(26,1);cx.textAlign='right';cx.fillText(snap.s[0],x0+sw-8*u,my);cx.textAlign='left';cx.fillText(snap.s[1],x0+sw+tw+8*u,my);
+  cx.font=F(20,1);cx.textAlign='center';cx.fillStyle=tl<=10&&snap.ph==='play'?'#ffd24a':'#fff';cx.fillText(Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0'),vw/2,my);
+  if(cfg.showfps){cx.font=F(12);cx.textAlign='left';cx.fillStyle='#8d9298';cx.fillText(fpsv+' FPS',8,vh-24*u)}
+  if(snap.m){
+    cx.fillStyle='#000b';cx.fillRect(0,vh/2-34*u,vw,64*u);cx.font=F(40,1);cx.textAlign='center';
+    cx.fillStyle=snap.m.startsWith('RED')?'#ff8176':snap.m.startsWith('BLUE')?'#82b4ff':'#fff';cx.fillText(snap.m,vw/2,vh/2-2*u);
+  }
+  cx.textBaseline='alphabetic';
+}
+fillPre();mapKeys();buildKeys();buildMod();syncCfg();applyCfg();showTab(curTab);connect();requestAnimationFrame(draw);
+</script></body></html>
