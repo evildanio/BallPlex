@@ -37,16 +37,39 @@ const MAPS = [
     { k: 'arm', x: 500, y: 250, n: 4, gap: 50, r: 17, w: .02, a: 0 }, { k: 'arm', x: 500, y: 250, n: 4, gap: 50, r: 17, w: .02, a: Math.PI }] },
   { n: 'Wrecking balls (roaming killers)', W: 1100, H: 550, G: 150, col: '#3f464e', haz: [{ k: 'roam', n: 3, r: 24, v: 3 }] },
 ].map(m => m.R ? { ...m, shape: 'circle', W: 2 * m.R, H: 2 * m.R } : { ...m, shape: 'rect' });
-const maps = {};
-function getMap(L) {                      // geometry for the lobby's map and goal-size setting (cached)
-  const key = L.size + '|' + L.set.gs;
-  if (!maps[key]) {
-    const m = MAPS[L.size], G = Math.min(m.G * L.set.gs, m.H - 40), y1 = (m.H - G) / 2, y2 = (m.H + G) / 2;
-    maps[key] = { ...m, G, y1, y2,
+// Validate and clamp a map sent from the map maker. Admins get much wider limits (object counts are still capped to avoid freezing the server).
+function cleanMap(r, free) {
+  if (!r || typeof r !== 'object') return null;
+  const num = (v, d, lo, hi) => { v = +v; if (!Number.isFinite(v)) v = d; return free ? clamp(v, -1e5, 1e5) : clamp(v, lo, hi); };
+  const circ = r.shape === 'circle', m = { n: clean(r.n, 40, 'Custom map'), shape: circ ? 'circle' : 'rect' };
+  if (/^#[0-9a-fA-F]{6}$/.test(r.col)) m.col = r.col;
+  if (circ) { m.R = num(r.R, 300, 100, 1500); m.W = m.H = 2 * m.R; } else { m.W = num(r.W, 800, 200, 6000); m.H = num(r.H, 400, 150, 3000); }
+  m.G = num(r.G, 130, 40, m.H - 40);
+  const A = a => Array.isArray(a) ? a : [], X = v => num(v, m.W / 2, -50, m.W + 50), Y = v => num(v, m.H / 2, -50, m.H + 50), cnt = (v, d) => Math.min(2000, Math.round(num(v, d, 1, 12)));
+  m.obs = A(r.obs).slice(0, free ? 500 : 80).map(o => { o = A(o); const e = num(o[3], 0, 0, 10); return [X(o[0]), Y(o[1]), num(o[2], 20, 4, 200)].concat(e ? [e] : []); });
+  m.haz = [];
+  for (const h of A(r.haz).slice(0, free ? 100 : 30)) {
+    if (!h || typeof h !== 'object') continue;
+    if (h.k === 'patrol') { const d = { k: 'patrol', x1: X(h.x1), y1: Y(h.y1), x2: X(h.x2), y2: Y(h.y2), r: num(h.r, 22, 6, 80), v: num(h.v, 2, .2, 12), s0: num(h.s0, 0, 0, 1) }; if (Math.hypot(d.x2 - d.x1, d.y2 - d.y1) >= 1) m.haz.push(d); }
+    else if (h.k === 'arm') m.haz.push({ k: 'arm', x: X(h.x), y: Y(h.y), n: cnt(h.n, 3), gap: num(h.gap, 55, 10, 200), r: num(h.r, 17, 6, 60), w: num(h.w, .02, -.2, .2), a: num(h.a, 0, -7, 7) });
+    else if (h.k === 'roam') m.haz.push({ k: 'roam', n: cnt(h.n, 2), r: num(h.r, 22, 6, 80), v: num(h.v, 2.6, .2, 12) });
+    else if (h.k === 'pool') m.haz.push({ k: 'pool', x: X(h.x), y: Y(h.y), r: num(h.r, 40, 10, 300) });
+    else if (h.k === 'lava' && !m.haz.some(z => z.k === 'lava')) { const rmin = num(h.rmin, 36, 10, 200); m.haz.push({ k: 'lava', every: Math.round(num(h.every, 110, 30, 3000)), rmin, rmax: Math.max(rmin, num(h.rmax, 58, 10, 300)), warn: Math.round(num(h.warn, 75, 10, 600)), life: Math.round(num(h.life, 300, 30, 3000)) }); }
+  }
+  return m;
+}
+const mapOf = L => (L.size === -1 && L.cmap) || MAPS[L.size] || MAPS[1];
+const isFree = (L, p) => !!((L.host && L.host.admin) || (p && p.admin));   // admin lobbies (and admin edits) skip the host setting limits
+function getMap(L) {                      // geometry for the lobby's map and goal-size setting (cached per lobby)
+  const m = mapOf(L), key = L.size + '|' + L.set.gs + '|' + L.cv;
+  if (L.mk !== key) {
+    const G = L.host && L.host.admin ? m.G * L.set.gs : Math.min(m.G * L.set.gs, m.H - 40), y1 = (m.H - G) / 2, y2 = (m.H + G) / 2;
+    L.mk = key;
+    L.mv = { ...m, G, y1, y2,
       posts: [[0, y1], [0, y2], [m.W, y1], [m.W, y2]].map(([x, y]) => ({ x, y, vx: 0, vy: 0, r: 5, im: 0 })),
       obs: (m.obs || []).map(([x, y, r, e]) => ({ x, y, vx: 0, vy: 0, r, im: 0, e })) };
   }
-  return maps[key];
+  return L.mv;
 }
 // sc score limit, tm minutes, ps player speed, kp kick power, cv curve, sp sprint boost, gh ghost allowed, pc player collisions,
 // bf ball friction, bn bounciness, br ball size, pr player size, bm ball weight, pf player friction, gs goal size, sd stamina drain
@@ -97,7 +120,7 @@ const r1 = n => Math.round(n * 10) / 10;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const clean = (s, n, d) => String(s || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, n) || d;
 const mk = o => ({ id: ++uid, name: '', team: 's', L: null, x: 0, y: 0, vx: 0, vy: 0, r: PR, im: .5,
-  ix: 0, iy: 0, k: 0, c: 0, sp: 0, kc: 0, st: 1, tired: 0, on: 0, g: 0, gh: 0, fails: 0, lockUntil: 0, bt: 0, aim: 0, aimT: 0, dead: 0, inv: 0, admin: false, ip: '', ...o });
+  ix: 0, iy: 0, k: 0, c: 0, sp: 0, kc: 0, st: 1, tired: 0, on: 0, g: 0, gh: 0, fails: 0, lockUntil: 0, bt: 0, aim: 0, aimT: 0, dead: 0, inv: 0, admin: false, ip: '', cs: [4, 0, 0], ...o });
 
 function pushList() {
   const list = [...lobbies.values()].map(L => ({ id: L.id, name: L.name, mode: L.mode, n: L.players.filter(q => !q.bot).length, ph: L.ph, lock: !!L.pw }));
@@ -105,8 +128,8 @@ function pushList() {
 }
 function info(L) {
   const msg = { t: 'lobby', id: L.id, name: L.name, mode: L.mode, size: L.size, set: L.set, host: L.host.id, ph: L.ph,
-    players: L.players.map(q => ({ id: q.id, name: q.name, team: q.team, bot: !!q.bot, admin: !!q.admin })) };
-  L.players.forEach(p => p.ws && send(p.ws, p === L.host ? { ...msg, pw: L.pw, bans: L.bans.map(({ id, name }) => ({ id, name })) } : msg));   // only the host sees the password and the ban list
+    players: L.players.map(q => ({ id: q.id, name: q.name, team: q.team, bot: !!q.bot, admin: !!q.admin, cs: q.cs })), cmap: L.cmap || undefined, free: !!(L.host && L.host.admin) };
+  L.players.forEach(p => p.ws && send(p.ws, p === L.host || p.admin ? { ...msg, pw: L.pw, bans: L.bans.map(({ id, name }) => ({ id, name })) } : msg));   // only the host sees the password and the ban list
   pushList();
 }
 function leave(p) {
@@ -119,8 +142,8 @@ function leave(p) {
 }
 function spawn(p, M) { p.x = p.team === 'r' ? M.W * .25 : M.W * .75; p.y = M.H / 2; p.vx = p.vy = 0; p.st = 1; p.tired = 0; p.dead = 0; p.inv = 90; }   // inv: 1.5 s of safety after every spawn
 function kickoff(L) {
-  const M = MAPS[L.size], b = L.g.ball; b.x = M.W / 2; b.y = M.H / 2; b.vx = b.vy = b.sp = 0;
-  L.g.hz = L.g.hz.filter(h => h.k === 'saw'); if (L.g.lava) L.g.lava.t = Math.round(L.g.lava.every * 1.5);   // lava is cleared at every kickoff
+  const M = mapOf(L), b = L.g.ball; b.x = M.W / 2; b.y = M.H / 2; b.vx = b.vy = b.sp = 0;
+  L.g.hz = L.g.hz.filter(h => h.k === 'saw' || h.st); L.g.last = 0; if (L.g.lava) L.g.lava.t = Math.round(L.g.lava.every * 1.5);   // lava is cleared at every kickoff
   const per = Math.max(2, Math.floor(M.H / 48));          // players per column; big teams line up in several columns
   for (const t of ['r', 'b']) {
     const ps = L.players.filter(p => p.team === t);
@@ -132,18 +155,18 @@ function kickoff(L) {
 }
 function startGame(L) {
   L.ph = 'play';
-  L.g = { ph: 'play', sc: [0, 0], tl: L.set.tm * 3600, pt: 0, msg: '', hz: [], ball: { x: 0, y: 0, vx: 0, vy: 0, sp: 0, r: BR, im: 1 } };
+  L.g = { ph: 'play', sc: [0, 0], tl: L.set.tm * 3600, pt: 0, msg: '', hz: [], ev: [], last: 0, ball: { x: 0, y: 0, vx: 0, vy: 0, sp: 0, r: BR, im: 1 } };
   kickoff(L); initHaz(L); info(L);
 }
 function handle(p, m) {
   if (m.name) p.name = clean(m.name, 16, p.name);
-  const L = p.L, host = L && L.host === p;
+  const L = p.L, host = L && (L.host === p || p.admin);   // admins can run any lobby they are in
   if (String(m.t).startsWith('a_') && !p.admin) return;          // admin-only messages
   switch (m.t) {
     case 'create': {
       if (L) return;
       const n = { id: ++lid, name: clean(m.lname, 24, p.name + "'s lobby"), mode: [0, 1, 2, 3].includes(m.mode) ? m.mode : 2,   // 0 = infinite (inf vs inf)
-        size: Number.isInteger(m.size) && MAPS[m.size] ? m.size : 1, set: { ...DEF }, host: p, players: [p], ph: 'lobby', g: null, bans: [], bid: 0, pw: String(m.pass || '').slice(0, 32) };
+        size: Number.isInteger(m.size) && MAPS[m.size] ? m.size : 1, set: { ...DEF }, host: p, players: [p], ph: 'lobby', g: null, bans: [], bid: 0, cmap: null, cv: 0, pw: String(m.pass || '').slice(0, 32) };
       lobbies.set(n.id, n); p.L = n; p.team = 's'; info(n); break;
     }
     case 'join': {
@@ -166,7 +189,7 @@ function handle(p, m) {
       if (!L || !['r', 'b', 's'].includes(m.team) || m.team === p.team) return;
       if (m.team !== 's' && L.players.filter(q => q.team === m.team).length >= (L.mode || 99)) return err(p, 'That team is full.');
       p.team = m.team; p.ix = p.iy = p.k = p.c = p.sp = p.g = 0;
-      if (L.ph === 'play' && p.team !== 's') spawn(p, MAPS[L.size]);
+      if (L.ph === 'play' && p.team !== 's') spawn(p, mapOf(L));
       info(L); break;
     }
     case 'start': if (host && L.ph === 'lobby' && L.players.some(q => q.team !== 's')) startGame(L); break;
@@ -175,7 +198,7 @@ function handle(p, m) {
     case 'bot':
       if (host && ['r', 'b'].includes(m.team) && L.players.length < MAXP && L.players.filter(q => q.team === m.team).length < (L.mode || 99)) {
         const q = mk({ bot: 1, team: m.team, L }); q.name = 'Bot ' + q.id; L.players.push(q);
-        if (L.ph === 'play') spawn(q, MAPS[L.size]);
+        if (L.ph === 'play') spawn(q, mapOf(L));
         info(L);
       } else if (host) err(p, 'That team is full.');
       break;
@@ -196,20 +219,21 @@ function handle(p, m) {
       if (!host) return;
       if (m.k === 'pass') { L.pw = String(m.v || '').slice(0, 32); info(L); break; }
       if (m.k === 'reset') { L.set = { ...DEF }; info(L); break; }
-      const k = m.k, v = +m.v; if (isNaN(v)) return;
+      const k = m.k, v = +m.v; if (!Number.isFinite(v)) return;
       if (k === 'size' || k === 'mode') {
         if (L.ph !== 'lobby') return;
-        if (k === 'size' && Number.isInteger(v) && MAPS[v]) L.size = v;
+        if (k === 'size' && ((Number.isInteger(v) && MAPS[v]) || (v === -1 && L.cmap))) L.size = v;
         else if (k === 'mode' && [0, 1, 2, 3].includes(v) && (v === 0 || ['r', 'b'].every(t => L.players.filter(q => q.team === t).length <= v))) L.mode = v;
         else return;
-      } else if (RANGE[k]) L.set[k] = Math.round(clamp(v, ...RANGE[k]) * 100) / 100; else return;
+      } else if (RANGE[k]) L.set[k] = isFree(L, p) ? v : Math.round(clamp(v, ...RANGE[k]) * 100) / 100; else return;
       info(L); break;
     }
     case 'preset': {                                   // load or import a settings preset (validated and clamped)
       if (!host || !m.set || typeof m.set !== 'object') return;
-      for (const k in RANGE) { const v = parseFloat(m.set[k]); if (Number.isFinite(v)) L.set[k] = Math.round(clamp(v, ...RANGE[k]) * 100) / 100; }
+      for (const k in RANGE) { const v = parseFloat(m.set[k]); if (Number.isFinite(v)) L.set[k] = isFree(L, p) ? v : Math.round(clamp(v, ...RANGE[k]) * 100) / 100; }
       if (L.ph === 'lobby') {                          // map and mode only change between matches
-        const i = MAPS.findIndex(x => x.n === m.map); if (i >= 0) L.size = i;
+        if (m.cmap) { const c = cleanMap(m.cmap, isFree(L, p)); if (c) { L.cmap = c; L.cv++; L.size = -1; } }
+        else { const i = MAPS.findIndex(x => x.n === m.map); if (i >= 0) L.size = i; }
         const v = +m.mode;
         if ([0, 1, 2, 3].includes(v) && (v === 0 || ['r', 'b'].every(t => L.players.filter(q => q.team === t).length <= v))) L.mode = v;
       }
@@ -251,6 +275,12 @@ function handle(p, m) {
       x.players.filter(q => !q.bot).forEach(q => { err(q, 'The lobby was closed by an admin.'); leave(q); }); break;
     }
     case 'a_say': { const s = clean(m.msg, 120, ''); if (s) all.forEach(q => note(q, 'Admin: ' + s)); break; }
+    case 'cos': p.cs = [Math.round(clamp(+m.sh || 0, 0, 8)), Math.round(clamp(+m.shot || 0, 0, 6)), Math.round(clamp(+m.goal || 0, 0, 6))]; if (L) info(L); break;
+    case 'cmap': {                                     // use a map made in the map maker (only between matches)
+      if (!host || L.ph !== 'lobby') return;
+      const c = cleanMap(m.map, isFree(L, p)); if (!c) return err(p, 'That map is not valid.');
+      L.cmap = c; L.cv++; L.size = -1; info(L); break;
+    }
     case 'leave': leave(p); break;
   }
 }
@@ -321,7 +351,7 @@ function finish(L) {
   g.msg = r === b ? 'DRAW' : (r > b ? 'RED' : 'BLUE') + ' WINS!';
 }
 function score(L, i) {
-  const g = L.g; g.sc[i]++;
+  const g = L.g; g.sc[i]++; g.ev.push([1, g.last || 0, r1(g.ball.x), r1(g.ball.y), i]);
   if (g.sc[i] >= L.set.sc) return finish(L);
   g.ph = 'goal'; g.pt = 120; g.msg = (i ? 'BLUE' : 'RED') + ' SCORES!';
 }
@@ -330,16 +360,18 @@ function initHaz(L) {
   const M = getMap(L), g = L.g; g.hz = []; g.lava = null;
   for (const d of M.haz || []) {
     if (d.k === 'patrol') {
-      const dx = d.x2 - d.x1, dy = d.y2 - d.y1, len = Math.hypot(dx, dy);
+      const dx = d.x2 - d.x1, dy = d.y2 - d.y1, len = Math.hypot(dx, dy); if (len < 1) continue;
       g.hz.push({ k: 'saw', r: d.r, x: d.x1, y: d.y1, vx: 0, vy: 0, im: 0, d, len, ux: dx / len, uy: dy / len, s: (d.s0 || 0) * len, dir: 1 });
     } else if (d.k === 'arm') {
       for (let i = 1; i <= d.n; i++) g.hz.push({ k: 'saw', r: d.r, x: d.x, y: d.y, vx: 0, vy: 0, im: 0, arm: { x: d.x, y: d.y, dist: d.gap * i, a: d.a, w: d.w } });
     } else if (d.k === 'roam') {
       for (let i = 0; i < d.n; i++) {
-        let x, y; do { x = M.W * (.12 + .76 * Math.random()); y = M.H * (.12 + .76 * Math.random()); } while (Math.hypot(x - M.W / 2, y - M.H / 2) < 130);
+        let x, y; for (let tries = 0; tries < 30; tries++) { x = M.W * (.12 + .76 * Math.random()); y = M.H * (.12 + .76 * Math.random()); if (Math.hypot(x - M.W / 2, y - M.H / 2) >= 130) break; }
         const a = Math.random() * 6.283;
         g.hz.push({ k: 'saw', r: d.r, x, y, vx: Math.cos(a) * d.v, vy: Math.sin(a) * d.v, im: 0, roam: 1 });
       }
+    } else if (d.k === 'pool') {                            // lava pit: always deadly
+      g.hz.push({ k: 'lava', x: d.x, y: d.y, r: d.r, t: 0, warn: 0, life: 1e9, st: 1 });
     } else if (d.k === 'lava') g.lava = { ...d, t: Math.round(d.every * 1.5) };
   }
 }
@@ -377,7 +409,8 @@ const hzOut = h => h.k === 'saw' ? [r1(h.x), r1(h.y), h.r, 0, 0]
 function step(L) {
   const g = L.g, b = g.ball, M = getMap(L), T = L.set, ps = L.players.filter(p => p.team !== 's'), alive = ps.filter(p => !p.dead);
   BN = T.bn; b.r = BR * T.br; b.im = 1 / T.bm;
-  const pd = clamp(1 - .04 * T.pf, .02, .999), bd = clamp(1 - .01 * T.bf, 0, 1), acc = 2.4 * (1 - pd) / pd;   // acc keeps top speed constant whatever the friction
+  const free = !!(L.host && L.host.admin), capP = free ? Infinity : 150, capB = free ? Infinity : 120;   // admin lobbies: no safety limits at all
+  const pd = free ? 1 - .04 * T.pf : clamp(1 - .04 * T.pf, .02, .999), bd = free ? 1 - .01 * T.bf : clamp(1 - .01 * T.bf, 0, 1), acc = 2.4 * (1 - pd) / pd;   // acc keeps top speed constant whatever the friction
   for (const p of ps) { p.r = PR * T.pr; p.gh = T.gh && p.g ? 1 : 0; }   // ghost: ball passes through, no kicking
   if (g.ph === 'play') {
     for (const p of alive) {
@@ -392,6 +425,7 @@ function step(L) {
       const dx = b.x - p.x, dy = b.y - p.y, d = Math.hypot(dx, dy);
       if (!p.gh && (p.k || p.c) && !p.kc && d && d < p.r + b.r + 4) {      // Space/X = straight kick, Q/E = kick with curve
         const f = KICK * T.kp; b.vx += dx / d * f; b.vy += dy / d * f; b.sp = p.c * CURVE * T.cv; p.kc = 8;
+        g.ev.push([0, p.id, r1(b.x), r1(b.y), p.c]); g.last = p.id;
       }
     }
     hazards(L, M, T, ps, alive);
@@ -401,10 +435,10 @@ function step(L) {
     const c = Math.cos(b.sp), s = Math.sin(b.sp), vx = b.vx;
     b.vx = vx * c - b.vy * s; b.vy = vx * s + b.vy * c; b.sp *= .98; if (Math.abs(b.sp) < 1e-4) b.sp = 0;
   }
-  for (const p of alive) { p.x += p.vx; p.y += p.vy; p.vx *= pd; p.vy *= pd; const s = Math.hypot(p.vx, p.vy); if (s > 150) { p.vx *= 150 / s; p.vy *= 150 / s; } }
+  for (const p of alive) { p.x += p.vx; p.y += p.vy; p.vx *= pd; p.vy *= pd; const s = Math.hypot(p.vx, p.vy); if (s > capP) { p.vx *= capP / s; p.vy *= capP / s; } }
   b.x += b.vx; b.y += b.vy; b.vx *= bd; b.vy *= bd;
-  { const s = Math.hypot(b.vx, b.vy); if (s > 120) { b.vx *= 120 / s; b.vy *= 120 / s; } }   // speed caps keep extreme settings from blowing up
-  for (let i = 0; i < alive.length; i++) { if (T.pc) for (let j = i + 1; j < alive.length; j++) hit(alive[i], alive[j]); if (!alive[i].gh) hit(alive[i], b); }
+  { const s = Math.hypot(b.vx, b.vy); if (s > capB) { b.vx *= capB / s; b.vy *= capB / s; } }   // speed caps keep extreme settings from blowing up
+  for (let i = 0; i < alive.length; i++) { if (T.pc) for (let j = i + 1; j < alive.length; j++) hit(alive[i], alive[j]); if (!alive[i].gh) { hit(alive[i], b); if (Math.hypot(alive[i].x - b.x, alive[i].y - b.y) <= alive[i].r + b.r + 1) g.last = alive[i].id; } }
   M.posts.forEach(o => hit(o, b));
   M.obs.forEach(o => { hit(o, b, o.e || BN); alive.forEach(p => hit(o, p)); });
   g.hz.forEach(h => { if (h.k === 'saw') hit(h, b, 1.1); });
@@ -420,7 +454,8 @@ function step(L) {
   }
   if (ps.length > 8 && (g.n = (g.n || 0) + 1) & 1) return;   // big lobbies: 30 snapshots/s
   cast(L, { t: 's', p: ps.map(p => [p.id, r1(p.x), r1(p.y), (!p.gh && (p.k || p.c) ? 1 : 0) | (p.on ? 2 : 0) | (p.gh ? 4 : 0) | (p.dead ? 8 : 0), Math.round(p.st * 100) / 100, Math.ceil(p.dead / 60)]),
-    b: [r1(b.x), r1(b.y), Math.round(b.sp * 1000) / 1000], h: g.hz.map(hzOut), s: g.sc, tl: Math.max(0, Math.ceil(g.tl / 60)), ph: g.ph, m: g.msg });
+    b: [r1(b.x), r1(b.y), Math.round(b.sp * 1000) / 1000], h: g.hz.map(hzOut), e: g.ev.length ? g.ev : undefined, s: g.sc, tl: Math.max(0, Math.ceil(g.tl / 60)), ph: g.ph, m: g.msg });
+  g.ev = [];
 }
 // fixed 60Hz timestep
 const DT = 1000 / 60; let last = Date.now(), acc = 0;
