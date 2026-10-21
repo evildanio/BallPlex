@@ -18,3 +18,8 @@ Network: the game uses one TCP port (3000 by default) for both the page and the 
 
 
 just run npm install && node server.js in the game's directory to host and join by entering your server's ip in a browser on the same network or something.
+
+
+also don't forget to change the admin password it's somewhere in the server.js file.
+
+to open the admin login in game press the game's name 5 times.
