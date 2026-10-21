@@ -40,12 +40,21 @@ canvas{width:100%;height:auto;max-height:100vh;object-fit:contain;display:block;
 #pad button:active{background:#ffffff66}#pad .go{width:calc(92px*var(--cs));height:calc(92px*var(--cs));background:#d8dadd99;color:#111}
 #pad.edit>*{outline:2px dashed #fff;cursor:move}
 #ebar{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:5;display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);padding:8px 12px}
+#welcome{position:fixed;inset:0;z-index:50;background:#000c;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}#welcome .card{max-width:520px;width:100%;margin:0}#welcome h2{margin:0 0 6px}
+html.dc body{padding:8px}html.dc header{margin-bottom:7px;padding-bottom:5px}html.dc .card{padding:8px;margin-bottom:7px}html.dc p{margin:5px 0}html.dc input,html.dc select,html.dc button,html.dc textarea{padding:3px 7px}html.dc .row{gap:5px}html.dc .sgrid{gap:7px;margin:5px 0}html.dc .sgroup{margin-top:9px}html.dc .teams{gap:7px;margin-top:7px}html.dc .lob{padding:4px 0}
+html.dx body{padding:24px}html.dx header{margin-bottom:18px;padding-bottom:12px}html.dx .card{padding:22px;margin-bottom:18px}html.dx p{margin:12px 0}html.dx input,html.dx select,html.dx button,html.dx textarea{padding:11px 16px}html.dx .row{gap:12px}html.dx .sgrid{gap:18px;margin:14px 0}html.dx .sgroup{margin-top:24px}html.dx .teams{gap:18px;margin-top:18px}html.dx .lob{padding:12px 0}
 [hidden]{display:none!important}@media(max-width:640px){.teams{grid-template-columns:1fr}}
 </style></head><body><main>
 <header><h1 id="logo">BallPlexx</h1><div class="row"><button id="adm" hidden>Admin</button><button id="mmb">Map maker</button><button id="kb">Settings</button><button id="tog" hidden>Lobby menu</button><button id="leave" hidden>Leave lobby</button></div></header>
+<div id="welcome" hidden><div class="card">
+ <h2>Welcome to BallPlexx</h2>
+ <div class="sgroup"><h4>Language</h4><div class="row" id="wlang"></div></div>
+ <div class="sgroup"><h4>Interface size</h4><div class="row" id="wdens"></div><p class="mut">Compact fits more on screen. Spacious is easier to tap.</p></div>
+ <div class="row" style="margin-top:12px"><button class="go" id="wgo">Continue</button></div>
+</div></div>
 <div id="toast" role="status" hidden></div>
-<div class="card" id="alogin" hidden><b>Admin login</b><div class="row" style="margin-top:8px"><input id="apass" type="password" maxlength="64" placeholder="Admin password" autocomplete="off"><button class="go" id="ago">Log in</button><button id="acancel">Cancel</button></div></div>
-<div class="card" id="admin" hidden>
+<div class="card" id="alogin" hidden translate="no"><b>Admin login</b><div class="row" style="margin-top:8px"><input id="apass" type="password" maxlength="64" placeholder="Admin password" autocomplete="off"><button class="go" id="ago">Log in</button><button id="acancel">Cancel</button></div></div>
+<div class="card" id="admin" hidden translate="no">
  <div class="row" style="justify-content:space-between"><b>Admin panel</b><button id="aclose">Close</button></div>
  <div class="sgrid"><label>Ban length<select id="amins"><option value="0">Permanent</option><option value="10">10 minutes</option><option value="60">1 hour</option><option value="1440">1 day</option><option value="10080">1 week</option></select></label><label>Reason (optional)<input id="areason" maxlength="80"></label></div>
  <div class="sgroup"><h4>Players online</h4><div id="aplayers" class="mut">Loading...</div></div>
@@ -77,6 +86,8 @@ canvas{width:100%;height:auto;max-height:100vh;object-fit:contain;display:block;
  <div id="t_gp" hidden><p class="mut" id="gstat"></p><p class="mut">Move with the left stick or the D-pad. Click a slot, then press a controller button. Backspace clears the slot and Escape cancels.</p><div id="ggrid" class="kgrid"></div><div class="sgrid" id="dzgrid"></div><button id="greset">Reset controller</button></div>
  <div id="t_gr" hidden><div id="rgrid" class="sgrid"></div></div>
  <div id="t_ap" hidden>
+  <div class="sgroup"><h4>Language</h4><div class="row" id="slang"></div></div>
+  <div class="sgroup"><h4>Interface size</h4><div class="row" id="sdens"></div></div>
   <div class="sgroup"><h4>Player style</h4><p class="mut">Other players see your style. Pick a shade of your team color:</p><div id="shades" class="row"></div>
    <div class="sgrid"><label>Shot effect<select id="cshot"><option value="0">None</option><option value="1">Sparks</option><option value="2">Shockwave</option><option value="3">Flame trail</option><option value="4">Lightning</option><option value="5">Confetti</option><option value="6">Smoke</option></select></label>
    <label>Goal explosion<select id="cgoal"><option value="0">None</option><option value="1">Fireworks</option><option value="2">Confetti rain</option><option value="3">Shockwave</option><option value="4">Pixel burst</option><option value="5">Lightning flash</option><option value="6">Smoke and embers</option></select></label></div></div>
@@ -94,14 +105,15 @@ canvas{width:100%;height:auto;max-height:100vh;object-fit:contain;display:block;
 </div>
 <div id="room" hidden>
  <div class="card">
-  <div class="row" style="justify-content:space-between"><div><b id="rtitle"></b><div class="mut" id="rsub"></div></div><div class="row"><button class="go" id="start">Start match</button><button id="stop">End match</button></div></div>
-  <div class="teams"><div class="tr"><h3>Red team</h3><div id="pr"></div><button data-t="r">Join red</button><button data-bot="r">Add bot</button></div>
+  <div class="row" style="justify-content:space-between"><div><b id="rtitle" translate="no"></b><div class="mut" id="rsub" translate="no"></div></div><div class="row"><button class="go" id="start">Start match</button><button id="stop">End match</button></div></div>
+  <div class="teams"><div class="tr"><h3 id="tn0" translate="no">Red</h3><div id="pr"></div><button data-t="r" id="jt0" translate="no">Join Red</button><button data-bot="r">Add bot</button></div>
   <div><h3>Spectators</h3><div id="ps"></div><button data-t="s">Spectate</button></div>
-  <div class="tb"><h3>Blue team</h3><div id="pb"></div><button data-t="b">Join blue</button><button data-bot="b">Add bot</button></div></div>
+  <div class="tb"><h3 id="tn1" translate="no">Blue</h3><div id="pb"></div><button data-t="b" id="jt1" translate="no">Join Blue</button><button data-bot="b">Add bot</button></div></div>
   <p class="mut" id="hint"></p></div>
  <div class="card" id="mod" hidden>
   <b>Host settings</b>
   <div id="modgrid"></div>
+  <div class="sgroup"><h4>Teams</h4><div class="sgrid" id="tgr"><label>Left team name<input id="tn0i" maxlength="14"></label><label>Right team name<input id="tn1i" maxlength="14"></label><label>Left team color<input id="tc0i" type="color"></label><label>Right team color<input id="tc1i" type="color"></label></div><button id="tnreset">Reset team names and colors</button></div>
   <div class="sgroup"><h4>Lobby password</h4><div class="row"><input id="hpass" maxlength="32" placeholder="No password"><button id="hpset">Set password</button><button id="hpclear">Remove password</button></div></div>
   <div class="sgroup"><h4>Banned from this lobby</h4><div id="bans" class="mut">Nobody is banned.</div></div>
   <div class="sgroup"><h4>Presets, import and export</h4>
@@ -119,7 +131,7 @@ canvas{width:100%;height:auto;max-height:100vh;object-fit:contain;display:block;
 </main><script>
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),copy=o=>JSON.parse(JSON.stringify(o));
 for(const k of['Cfg','Binds','Name'])if(localStorage['hb'+k]&&!localStorage['bp'+k])localStorage['bp'+k]=localStorage['hb'+k];   // keep settings saved before the rename
-const GD=40,OX=60,PR=15,BR=10,mname=m=>m?m+'v'+m:'inf vs inf',cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const GD=40,OX=60,PR=15,BR=10,mname=m=>m?m+'v'+m:tr('inf vs inf'),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 const mapOpts=()=>MAPS.map((x,i)=>`<option value="${i}">${esc(x.n)}</option>`).join('');
 const curMap=()=>lobby&&(lobby.size===-1?lobby.cmap:MAPS[lobby.size]);
 const SETG=[
@@ -130,30 +142,47 @@ const SETG=[
 const ctl=(a,[k,l,mn,mx,st])=>{if(mn===undefined)return`<label class="chk"><input type="checkbox" data-${a}="${k}"> ${l}</label>`;const h=a==='set'&&RANGES[k]||[mn,mx];return`<label>${l}<span class="pair"><input type="range" data-${a}="${k}" data-mx="${mx}" min="${mn}" max="${mx}" step="${st}"><input type="number" data-${a}="${k}" min="${h[0]}" max="${h[1]}" step="${st}"></span></label>`};
 const readVal=t=>{if(t.type==='checkbox')return +t.checked;if(t.tagName==='SELECT')return isNaN(t.value)?t.value:+t.value;const v=parseFloat(t.value);return Number.isFinite(v)?(FREE?v:cl(v,+t.min,+t.max)):undefined};
 const touch=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;
-const CD={cs:1,co:.85,gui:1,tmode:'auto',hide:{},lay:{},res:'auto',fps:0,sm:.6,cam:'ball',zoom:1,vfx:1,cos:{sh:4,shot:0,goal:0},ui:{bg:'#17181a',card:'#222427',fg:'#e4e6e8',go:'#d8dadd'},trail:1,names:1,showfps:0,dz:.15,gb:{k:[0,7],q:[4,-1],e:[5,-1],s:[6,10],z:[2,-1]}};
+const CD={cs:1,co:.85,gui:1,tmode:'auto',hide:{},lay:{},res:'auto',fps:0,sm:.6,cam:'ball',zoom:1,vfx:1,shake:1,lang:'',density:'normal',welcomed:0,cos:{sh:4,shot:0,goal:0},ui:{bg:'#17181a',card:'#222427',fg:'#e4e6e8',go:'#d8dadd'},trail:1,names:1,showfps:0,dz:.15,gb:{k:[0,7],q:[4,-1],e:[5,-1],s:[6,10],z:[2,-1]}};
 const LAY={joy:[16,74],k:[88,76],s:[74,86],z:[88,52],q:[60,86],e:[74,64]};
 let cfg=(()=>{try{return{...copy(CD),...JSON.parse(localStorage.bpCfg)}}catch{return copy(CD)}})();
 const saveCfg=()=>{localStorage.bpCfg=JSON.stringify(cfg)};
-let MAPS=[],RANGES={},FREE=false,parts=[],evq=[],trailFx=null,flash=null,ed=MD(),sel=null,tool='sel',pend=null,dragO=null,isAdmin=false,noRC=false,logoN=0,logoT=0,fx=[],wasDead={},cam={x:0,y:0,k:''},ws,me=0,lobby=null,snap=null,keys={},last='',disp={},trail=[],panel=false,editing=false,grb=null,curTab=touch?'tc':'kb',toastT=0,joining=0,gp={x:0,y:0,k:0,q:0,e:0,s:0,z:0};
+// ---- languages: the interface text is English in the code and translated through the dictionary at the end of this script ----
+const DT={},LI={pl:0,ru:1,es:2};
+const detLang=()=>{const l=String(navigator.language||'en').slice(0,2).toLowerCase();return l in LI?l:'en'};
+function tr(s,...a){const d=DT[s],r=d&&LI[cfg.lang]!==undefined?d[LI[cfg.lang]]:s;return a.length?String(r).replace(/\{(\d)\}/g,(_,i)=>a[i]):r}
+function trNode(n){
+  if(n.nodeType===3){
+    const par=n.parentNode;if(!par||(par.closest&&par.closest('script,style,textarea,[translate="no"]')))return;
+    if(n.__en===undefined){const m=/^(\s*)([\s\S]*?)(\s*)$/.exec(n.nodeValue);if(!m[2])return;n.__en=m[2];n.__pre=m[1];n.__post=m[3]}
+    const v=n.__pre+tr(n.__en)+n.__post;if(n.nodeValue!==v)n.nodeValue=v;
+  }else if(n.nodeType===1){
+    if(n.closest&&n.closest('[translate="no"]'))return;
+    for(const a of['placeholder','title'])if(n.hasAttribute&&n.hasAttribute(a)){const k='en_'+a;if(n.dataset[k]===undefined)n.dataset[k]=n.getAttribute(a);const v=tr(n.dataset[k]);if(n.getAttribute(a)!==v)n.setAttribute(a,v)}
+    n.childNodes.forEach(trNode);
+  }
+}
+if(!cfg.lang)cfg.lang=detLang();
+let lastList=null,MAPS=[],RANGES={},FREE=false,parts=[],evq=[],trailFx=null,flash=null,ed=MD(),sel=null,tool='sel',pend=null,dragO=null,isAdmin=false,noRC=false,logoN=0,logoT=0,fx=[],wasDead={},cam={x:0,y:0,k:''},ws,me=0,lobby=null,snap=null,keys={},last='',disp={},trail=[],panel=false,editing=false,grb=null,curTab=touch?'tc':'kb',toastT=0,joining=0,gp={x:0,y:0,k:0,q:0,e:0,s:0,z:0};
 const joy={x:0,y:0};
 $('name').value=localStorage.bpName||'';
 const send=m=>ws&&ws.readyState===1&&ws.send(JSON.stringify(m));
 const nm=()=>{const n=$('name').value.trim()||'Player';localStorage.bpName=n;return n};
 const padOn=()=>editing||(!!lobby&&lobby.ph==='play'&&!panel&&(cfg.tmode==='on'||(cfg.tmode==='auto'&&touch)));
-function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},3500)}
+function toast(m){const t=$('toast');t.textContent=tr(m);t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},3500)}
 function connect(){
   ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
   ws.onclose=()=>{lobby=snap=null;panel=false;show();if(noRC)return;$('list').textContent='Disconnected. Reconnecting...';setTimeout(connect,1500)};
   ws.onmessage=e=>{const m=JSON.parse(e.data);({
     me:()=>{me=m.id;MAPS=m.maps;RANGES=m.ranges||{};isAdmin=false;$('adm').hidden=true;$('admin').hidden=true;$('size').innerHTML=mapOpts();$('size').value=1;buildMod();sendCos();show()},lobbies:()=>showList(m.list),
     lobby:()=>{if(m.ph!=='play')panel=false;lobby=m;show()},
-    err:()=>toast(m.msg),note:()=>toast(m.msg),banned:()=>{noRC=true;toast(m.msg);$('list').textContent=m.msg},admin:()=>{isAdmin=true;$('adm').hidden=false;openAdmin()},a_data:()=>renderAdmin(m),
+    err:()=>toast(m.msg),note:()=>toast(m.msg),banned:()=>{noRC=true;toast(m.msg);$('list').textContent=m.msg},admin:()=>{isAdmin=true;$('adm').hidden=false;sendCos();buildAppearance();show();openAdmin()},a_data:()=>renderAdmin(m),
     left:()=>{lobby=snap=null;panel=false;show()},
     s:()=>{snap=m;if(m.e)evq.push(...m.e);const[bx,by,sp]=m.b;if(sp){trail.push([bx,by]);if(trail.length>18)trail.shift()}else trail=[]}
   })[m.t]?.()};
 }
 function showList(l){
-  $('list').innerHTML=l.length?l.map(x=>`<div class="lob"><span><b>${esc(x.name)}</b> <span class="mut">${mname(x.mode)}, ${x.n} player${x.n===1?'':'s'}, ${x.ph==='play'?'match in progress':'waiting'}${x.lock?', password protected':''}</span></span><button data-j="${x.id}" data-l="${x.lock?1:''}" data-n="${esc(x.name)}">Join</button></div>`).join(''):'No lobbies yet. Create one above.';
+  lastList=l;
+  $('list').innerHTML=l.length?l.map(x=>`<div class="lob"><span><b translate="no">${esc(x.name)}</b> <span class="mut">${mname(x.mode)}, ${tr('Players: {0}',x.n)}, ${tr(x.ph==='play'?'match in progress':'waiting')}${x.lock?', '+tr('password protected'):''}</span></span><button data-j="${x.id}" data-l="${x.lock?1:''}" data-n="${esc(x.name)}">Join</button></div>`).join(''):'No lobbies yet. Create one above.';
 }
 function buildMod(){
   const mode='<label>Mode<select data-set="mode"><option value="0">Infinite (inf vs inf)</option><option value="1">1v1</option><option value="2">2v2</option><option value="3">3v3</option></select></label>';
@@ -173,16 +202,19 @@ function show(){
   if(!lobby)return;
   if(play&&!panel&&document.activeElement)document.activeElement.blur();
   const host=lobby.host===me||isAdmin,mp=curMap()||{};
-  $('rtitle').textContent=lobby.name;$('rsub').textContent=`${mname(lobby.mode)} on ${mp.n}${lobby.pw!==undefined&&lobby.pw?', password protected':''}`;
-  const row=p=>`<div class="pl"><span${p.admin?' class="adm"':''}>${esc(p.name)}${p.bot?' (bot)':''}${p.id===lobby.host?' (host)':''}${p.id===me?' (you)':''}</span>${host&&p.id!==me&&!p.admin?`<span class="row">${p.bot?`<button class="x" data-rm="${p.id}">Remove</button>`:`<button class="x" data-rm="${p.id}">Kick</button><button class="x" data-ban="${p.id}">Ban</button>`}</span>`:''}</div>`;
+  const rs=document.documentElement.style;rs.setProperty('--r',TC(0));rs.setProperty('--b',TC(1));
+  for(const i of[0,1]){$('tn'+i).textContent=TN(i);$('jt'+i).textContent=tr('Join {0}',TN(i))}
+  $('rtitle').textContent=lobby.name;$('rsub').textContent=tr('{0} on {1}',mname(lobby.mode),tr(mp.n||''))+(lobby.pw!==undefined&&lobby.pw?', '+tr('password protected'):'');
+  const row=p=>`<div class="pl"><span><span translate="no"${p.admin?' class="adm"':''}>${esc(p.name)}</span>${p.bot?' ('+tr('bot')+')':''}${p.id===lobby.host?' ('+tr('host')+')':''}${p.id===me?' ('+tr('you')+')':''}</span>${host&&p.id!==me&&!p.admin?`<span class="row">${p.bot?`<button class="x" data-rm="${p.id}">Remove</button>`:`<button class="x" data-rm="${p.id}">Kick out</button><button class="x" data-ban="${p.id}">Ban</button>`}</span>`:''}</div>`;
   for(const t of['r','b','s'])$('p'+t).innerHTML=lobby.players.filter(p=>p.team===t).map(row).join('')||'<div class="mut">Empty</div>';
   document.querySelectorAll('[data-bot]').forEach(b=>{b.hidden=!host});
   $('start').hidden=!host||play;$('stop').hidden=!host||!play;$('mod').hidden=!host;
   $('hint').textContent=host?'You are the host. Teams can be uneven, and bots count toward the team size.':play?'The match is in progress.':'Waiting for the host to start the match.';
   if(host&&document.activeElement!==$('hpass'))$('hpass').value=lobby.pw||'';
   if(host)$('bans').innerHTML=(lobby.bans||[]).length?lobby.bans.map(x=>`<div class="pl"><span>${esc(x.name)}</span><button class="x" data-unban="${x.id}">Unban</button></div>`).join(''):'Nobody is banned.';
+  if(host)for(const i of[0,1]){const ni=$('tn'+i+'i'),ci=$('tc'+i+'i');if(document.activeElement!==ni){ni.value=(lobby.tn&&lobby.tn[i])||'';ni.placeholder=tr(i?'Blue':'Red')}if(document.activeElement!==ci)ci.value=TC(i)}
   const sz=host&&$('modgrid').querySelector('[data-set="size"]');
-  if(sz){const has=[...sz.options].some(o=>o.value==='-1');if(lobby.cmap&&!has)sz.add(new Option('Custom: '+lobby.cmap.n,-1));else if(!lobby.cmap&&has)sz.remove(sz.options.length-1);else if(has)sz.options[sz.options.length-1].text='Custom: '+lobby.cmap.n}
+  if(sz){const has=[...sz.options].some(o=>o.value==='-1');if(lobby.cmap&&!has)sz.add(new Option(tr('Custom: {0}',lobby.cmap.n),-1));else if(!lobby.cmap&&has)sz.remove(sz.options.length-1);else if(has)sz.options[sz.options.length-1].text=tr('Custom: {0}',lobby.cmap.n)}
   if(host)$('modgrid').querySelectorAll('[data-set]').forEach(i=>{
     const k=i.dataset.set,v=k==='size'?lobby.size:k==='mode'?lobby.mode:lobby.set[k];
     i.disabled=play&&(k==='size'||k==='mode');
@@ -192,7 +224,7 @@ function show(){
   });
 }
 $('create').onclick=()=>send({t:'create',name:nm(),lname:$('lname').value,mode:+$('mode').value,size:+$('size').value,pass:$('lpass').value});
-$('list').onclick=e=>{const d=e.target.dataset;if(!d.j)return;if(d.l){joining=+d.j;$('pwt').textContent='Password for '+d.n;$('pwin').value='';$('pwbox').hidden=false;$('pwin').focus()}else send({t:'join',id:+d.j,name:nm()})};
+$('list').onclick=e=>{const d=e.target.dataset;if(!d.j)return;if(d.l){joining=+d.j;$('pwt').textContent=tr('Password for {0}',d.n);$('pwin').value='';$('pwbox').hidden=false;$('pwin').focus()}else send({t:'join',id:+d.j,name:nm()})};
 $('pwgo').onclick=()=>send({t:'join',id:joining,name:nm(),pass:$('pwin').value});
 $('pwx').onclick=()=>{$('pwbox').hidden=true};
 $('pwin').onkeydown=e=>{if(e.key==='Enter')$('pwgo').click()};
@@ -225,14 +257,14 @@ $('asend').onclick=()=>{const v=$('asay').value.trim();if(v){send({t:'a_say',msg
 // ---- host presets: save, load, import, export ----
 const getPre=()=>{try{return JSON.parse(localStorage.bpPresets)||{}}catch{return{}}};
 function fillPre(sel){const ks=Object.keys(getPre());$('plist').innerHTML=ks.length?ks.map(k=>`<option>${esc(k)}</option>`).join(''):'<option value="">No saved presets</option>';if(sel)$('plist').value=sel}
-const curPre=()=>({game:'ballplexx',v:1,map:(curMap()||{}).n,mode:lobby.mode,set:copy(lobby.set),cmap:lobby.cmap});
+const curPre=()=>({game:'ballplexx',v:1,map:(curMap()||{}).n,mode:lobby.mode,set:copy(lobby.set),cmap:lobby.cmap,tn:lobby.tn,tcl:lobby.tcl});
 function applyPre(p){
   if(!p||typeof p.set!=='object'||!p.set){toast('That is not a valid BallPlexx settings file.');return}
-  send({t:'preset',set:p.set,map:p.map,mode:p.mode,cmap:p.cmap});toast(lobby&&lobby.ph==='play'?'Settings applied. Map and mode change between matches.':'Settings applied.');
+  send({t:'preset',set:p.set,map:p.map,mode:p.mode,cmap:p.cmap,tn:p.tn,tcl:p.tcl});toast(lobby&&lobby.ph==='play'?'Settings applied. Map and mode change between matches.':'Settings applied.');
 }
-$('psave').onclick=()=>{const n=$('pname').value.trim().slice(0,30);if(!n){toast('Enter a name for the preset.');return}const p=getPre();p[n]=curPre();localStorage.bpPresets=JSON.stringify(p);fillPre(n);toast(`Saved preset "${n}".`)};
+$('psave').onclick=()=>{const n=$('pname').value.trim().slice(0,30);if(!n){toast('Enter a name for the preset.');return}const p=getPre();p[n]=curPre();localStorage.bpPresets=JSON.stringify(p);fillPre(n);toast(tr('Saved preset "{0}".',n))};
 $('pload').onclick=()=>{const p=getPre()[$('plist').value];if(!p){toast('No preset selected.');return}applyPre(p)};
-$('pdel').onclick=()=>{const k=$('plist').value,p=getPre();if(k in p){delete p[k];localStorage.bpPresets=JSON.stringify(p);fillPre();toast(`Deleted preset "${k}".`)}};
+$('pdel').onclick=()=>{const k=$('plist').value,p=getPre();if(k in p){delete p[k];localStorage.bpPresets=JSON.stringify(p);fillPre();toast(tr('Deleted preset "{0}".',k))}};
 $('pexp').onclick=()=>{
   const j=JSON.stringify(curPre(),null,2);$('ptext').value=j;
   if(navigator.clipboard)navigator.clipboard.writeText(j).catch(()=>{});
@@ -256,14 +288,14 @@ $('kreset').onclick=()=>{binds=copy(DEFB);saveBinds();buildKeys()};
 // ---- controller binds ----
 const GA={k:'Kick',q:'Curve left',e:'Curve right',s:'Sprint',z:'Ghost'};
 const GN=['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-up','D-down','D-left','D-right','Home'];
-const gname=i=>i<0?'None':GN[i]||'Button '+i;
+const gname=i=>i<0?'None':GN[i]||tr('Button {0}',i);
 function buildGp(){$('ggrid').innerHTML=Object.keys(GA).map(a=>`<div class="kb"><span>${GA[a]}</span>${[0,1].map(i=>`<button data-ga="${a}" data-gi="${i}">${grb&&grb.a===a&&grb.i===i?'Press a button...':gname(cfg.gb[a][i])}</button>`).join('')}</div>`).join('')}
 function setG(a,i,b){if(b>=0)for(const x in cfg.gb)cfg.gb[x]=cfg.gb[x].map(v=>v===b?-1:v);cfg.gb[a][i]=b;saveCfg()}
 $('ggrid').onclick=e=>{const d=e.target.dataset;if(d.ga){e.target.blur();grb={a:d.ga,i:+d.gi,wait:1};buildGp()}};
 $('greset').onclick=()=>{cfg.gb=copy(CD.gb);cfg.dz=CD.dz;saveCfg();buildGp();syncCfg()};
 function pollPad(){
   const p=navigator.getGamepads?[...navigator.getGamepads()].find(Boolean):null,n={x:0,y:0,k:0,q:0,e:0,s:0,z:0};
-  const txt=!navigator.getGamepads||!isSecureContext?'Controllers need HTTPS or localhost. Open the game over HTTPS to use one.':p?'Connected: '+p.id:'No controller detected. Connect one and press a button.';
+  const txt=tr(!navigator.getGamepads||!isSecureContext?'Controllers need HTTPS or localhost. Open the game over HTTPS to use one.':p?'Connected: {0}':'No controller detected. Connect one and press a button.',p&&p.id);
   if($('gstat').textContent!==txt)$('gstat').textContent=txt;
   if(p){
     const bt=i=>!!(p.buttons[i]&&p.buttons[i].pressed);
@@ -319,13 +351,13 @@ $('tgrid').innerHTML='<label>Show touch controls<select data-cfg="tmode"><option
 $('rgrid').innerHTML='<label>Render resolution<select data-cfg="res"><option value="auto">Automatic (match screen)</option><option value="0.5">Low (0.5x)</option><option value="1">Standard (1x)</option><option value="2">High (2x)</option><option value="3">Ultra (3x)</option></select></label>'
  +'<label>Frame limit<select data-cfg="fps"><option value="0">Unlimited</option><option value="60">60 FPS</option><option value="30">30 FPS</option></select></label>'
  +'<label>Camera on big maps<select data-cfg="cam"><option value="ball">Follow the ball and keep me in view</option><option value="me">Follow me</option></select></label>'
- +[['gui','GUI size (x)',.7,1.6,.05],['zoom','Zoom on big maps (x)',.6,1.6,.05],['sm','Movement smoothing (1 = off)',.2,1,.05],['vfx','Show shot and goal effects'],['trail','Show ball curve trail'],['names','Show player names'],['showfps','Show FPS counter']].map(s=>ctl('cfg',s)).join('');
+ +[['gui','GUI size (x)',.7,1.6,.05],['zoom','Zoom on big maps (x)',.6,1.6,.05],['sm','Movement smoothing (1 = off)',.2,1,.05],['vfx','Show shot and goal effects'],['shake','Screen shake from effects'],['trail','Show ball curve trail'],['names','Show player names'],['showfps','Show FPS counter']].map(s=>ctl('cfg',s)).join('');
 $('dzgrid').innerHTML=ctl('cfg',['dz','Stick deadzone',0,.6,.05]);
 function syncCfg(){
   document.querySelectorAll('[data-cfg]').forEach(i=>{const v=cfg[i.dataset.cfg];if(i.type==='checkbox')i.checked=!!v;else i.value=v});
   document.querySelectorAll('[data-hide]').forEach(i=>{i.checked=!cfg.hide[i.dataset.hide]});
 }
-function applyCfg(){document.body.style.fontSize=15*cfg.gui+'px';applyPad()}
+function applyCfg(){const dn=cfg.density==='compact'?'dc':cfg.density==='spacious'?'dx':'',h=document.documentElement.classList;h.toggle('dc',dn==='dc');h.toggle('dx',dn==='dx');document.body.style.fontSize=15*cfg.gui*({dc:.92,dx:1.08}[dn]||1)+'px';applyPad()}
 $('keys').oninput=$('keys').onchange=e=>{
   const t=e.target,k=t.dataset.cfg,h=t.dataset.hide;
   if(k){
@@ -340,12 +372,16 @@ function showTab(t){curTab=t;document.querySelectorAll('#keys [data-tab]').forEa
 $('keys').onclick=e=>{const d=e.target.dataset;if(d.tab)showTab(d.tab)};
 $('kb').onclick=()=>{const open=$('keys').hidden;$('keys').hidden=!open;rebind=grb=null;if(open){buildKeys();syncCfg();showTab(curTab)}};
 // ---- team shades, shot and goal effects, interface colors ----
-const SH=(team,k)=>team==='b'?`hsl(214,76%,${58+(k-4)*6.5}%)`:`hsl(5,72%,${55+(k-4)*6.5}%)`;
+function hslOf(hex){const[r,g,b]=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255),mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn;let h=0,s=0;if(d){s=d/(1-Math.abs(2*l-1));h=60*(mx===r?((g-b)/d+6)%6:mx===g?(b-r)/d+2:(r-g)/d+4)}return[h,s*100,l*100]}
+const DEFC=['#e0473a','#3f86e8'],TN=i=>(lobby&&lobby.tn&&lobby.tn[i])||tr(i?'Blue':'Red'),TC=i=>(lobby&&lobby.tcl&&lobby.tcl[i])||DEFC[i];
+const SH=(team,k,minL=8)=>{const[h,s,l]=hslOf(TC(team==='b'?1:0));return`hsl(${Math.round(h)},${Math.round(s)}%,${cl(l+(k-4)*6.5,minL,92)}%)`};
+const BLK=i=>{const[h,s,l]=hslOf(TC(i));return`hsl(${Math.round(h)},${Math.round(s)}%,${Math.min(l,42)}%)`};
 const tcol=(team,cs)=>SH(team,cs?cs[0]:4);
 const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)],BRIGHT=['#ff5a4a','#ffd24a','#5ad1ff','#7dff7a','#c77dff','#ffffff'];
-const P=(o,t)=>{parts.push({t0:t,m:600,s:4,vx:0,vy:0,...o});if(parts.length>900)parts=parts.slice(-900)};
+const P=(o,t)=>{parts.push({t0:t,m:600,s:4,vx:0,vy:0,...o});if(parts.length>1600)parts=parts.slice(-1600)};
 const bolt=(x,y,n,seg)=>{const a=rnd(0,6.28),pts=[[x,y]];let px=x,py=y;for(let j=0;j<n;j++){px+=Math.cos(a+rnd(-.6,.6))*rnd(seg,seg*2);py+=Math.sin(a+rnd(-.6,.6))*rnd(seg,seg*2);pts.push([px,py])}return pts};
 function shotFx(k,x,y,t,col){
+  if(k>6)return crazyShot(k,x,y,t);
   if(k===1)for(let i=0;i<14;i++){const a=rnd(0,6.28),v=rnd(.05,.3);P({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,s:rnd(2,4),c:pick(['#ffe27a','#fff','#ffb347']),m:rnd(250,500)},t)}
   else if(k===2){P({ring:1,x,y,r0:8,r1:70,c:col,m:450},t);P({ring:1,x,y,r0:4,r1:42,c:'#fff',m:350},t)}
   else if(k===3)trailFx={until:t+800};
@@ -354,6 +390,7 @@ function shotFx(k,x,y,t,col){
   else if(k===6)for(let i=0;i<9;i++){const a=rnd(0,6.28),v=rnd(.01,.06);P({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,s:rnd(6,11),grow:1,c:'#9aa0a6',m:rnd(500,800)},t)}
 }
 function goalFx(k,x,y,t,col){
+  if(k>6)return crazyGoal(k,x,y,t,col);
   if(k===1)for(let b=0;b<3;b++)for(let i=0;i<34;i++){const a=rnd(0,6.28),v=rnd(.05,.34);P({x:x+rnd(-30,30)*b,y:y+rnd(-30,30)*b,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g:.00025,s:rnd(2,4),c:pick(BRIGHT),m:rnd(700,1300),d:b*250},t)}
   else if(k===2)for(let i=0;i<70;i++)P({x:x+rnd(-80,80),y:y-rnd(60,160),vx:rnd(-.05,.05),vy:rnd(.02,.12),s:rnd(4,8),sq:1,c:pick(BRIGHT),m:rnd(1200,2000)},t);
   else if(k===3){for(let i=0;i<3;i++)P({ring:1,x,y,r0:10,r1:160+i*50,c:col,m:700+i*150,d:i*120},t);P({x,y,s:50,c:'#fff',m:200,grow:1},t)}
@@ -367,14 +404,16 @@ function handleEv(e,t,tm){
   if(e[0]===0)shotFx(cs[1],e[2],e[3],t,tcol(pl.team,cs));else goalFx(cs[2],e[2],e[3],t,tcol(e[4]?'b':'r',cs));
 }
 function drawParts(t,bp){
-  if(trailFx){if(t>trailFx.until)trailFx=null;else for(let i=0;i<2;i++)P({x:bp.x+rnd(-4,4),y:bp.y+rnd(-4,4),vx:rnd(-.02,.02),vy:rnd(-.04,.01),s:rnd(4,8),c:pick(['#ff5a1a','#ffb347','#ffd24a']),m:rnd(300,550)},t)}
+  if(trailFx){if(t>trailFx.until)trailFx=null;else for(let i=0;i<(trailFx.rain?4:2);i++)P({x:bp.x+rnd(-4,4),y:bp.y+rnd(-4,4),vx:rnd(-.02,.02),vy:rnd(-.04,.01),s:trailFx.rain?rnd(6,11):rnd(4,8),c:trailFx.rain?`hsl(${(t*.5+i*40)%360},100%,60%)`:pick(['#ff5a1a','#ffb347','#ffd24a']),m:trailFx.rain?rnd(600,1000):rnd(300,550)},t)}
   parts=parts.filter(p=>t-p.t0<p.m+(p.d||0));
   for(const p of parts){
     const a=t-p.t0-(p.d||0);if(a<0)continue;const f=a/p.m,k=1-f;cx.globalAlpha=k;
+    if(p.streak){const x=p.x+p.vx*a,y=p.y+p.vy*a;cx.strokeStyle=p.c;cx.lineWidth=p.s;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x-p.vx*90,y-p.vy*90);cx.stroke();continue}
+    if(p.swirl){const r=p.r0*(1-f),an=p.a0+f*p.w,x=p.x+Math.cos(an)*r,y=p.y+Math.sin(an)*r;cx.fillStyle=p.c;cx.beginPath();cx.arc(x,y,p.s*k+1,0,7);cx.fill();continue}
     if(p.bolt){cx.strokeStyle=p.c;cx.lineWidth=3*k+1;cx.beginPath();p.bolt.forEach(([x,y],i)=>i?cx.lineTo(x,y):cx.moveTo(x,y));cx.stroke();continue}
     if(p.ring){cx.lineWidth=5*k+1;cx.strokeStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.r0+(p.r1-p.r0)*f,0,7);cx.stroke();continue}
     const x=p.x+p.vx*a,y=p.y+p.vy*a+.5*(p.g||0)*a*a;cx.fillStyle=p.c;
-    if(p.sq)cx.fillRect(x-p.s/2,y-p.s/2,p.s,p.s);else{cx.beginPath();cx.arc(x,y,p.grow?p.s*(1+f*2):p.s*(.4+.6*k),0,7);cx.fill()}
+    if(p.sq){const w=p.w||p.s,h=p.h||p.s;cx.fillRect(x-w/2,y-h/2,w,h)}else{cx.beginPath();cx.arc(x,y,p.grow?p.s*(1+f*2):p.s*(.4+.6*k),0,7);cx.fill()}
   }
   cx.globalAlpha=1;
 }
@@ -388,14 +427,52 @@ function applyUI(){
   r.setProperty('--gotext',lum(u.go)>.55?'#16171a':'#ffffff');r.setProperty('--goh',mix(u.go,'#ffffff',.35));
 }
 function buildAppearance(){
-  $('shades').innerHTML=[0,1,2,3,4,5,6,7,8].map(k=>`<button class="sw${cfg.cos.sh===k?' on':''}" data-sh="${k}" title="Shade ${k+1}" style="background:linear-gradient(90deg,${SH('r',k)} 50%,${SH('b',k)} 50%)"></button>`).join('');
-  $('cshot').value=cfg.cos.shot;$('cgoal').value=cfg.cos.goal;
+  $('shades').innerHTML=[0,1,2,3,4,5,6,7,8].map(k=>`<button class="sw${cfg.cos.sh===k?' on':''}" data-sh="${k}" title="${tr('Shade {0}',k+1)}" style="background:linear-gradient(90deg,${SH('r',k)} 50%,${SH('b',k)} 50%)"></button>`).join('');
+  crazyOpts('cshot',CRZ_S);crazyOpts('cgoal',CRZ_G);
+  $('cshot').value=!isAdmin&&cfg.cos.shot>6?0:cfg.cos.shot;$('cgoal').value=!isAdmin&&cfg.cos.goal>6?0:cfg.cos.goal;
   $('themes').innerHTML=THEMES.map(([n],i)=>`<button data-th="${i}">${n}</button>`).join('');
   $('uicols').innerHTML=[['bg','Background'],['card','Panels'],['fg','Text'],['go','Accent']].map(([k,n])=>`<label>${n}<input type="color" data-ui="${k}" value="${cfg.ui[k]}"></label>`).join('');
 }
 $('t_ap').onclick=e=>{const d=e.target.dataset;if(d.sh!==undefined){cfg.cos.sh=+d.sh;saveCfg();buildAppearance();sendCos()}else if(d.th!==undefined){cfg.ui={...THEMES[+d.th][1]};saveCfg();applyUI();buildAppearance()}};
 $('t_ap').oninput=$('t_ap').onchange=e=>{const t=e.target;if(t.dataset.ui){cfg.ui[t.dataset.ui]=t.value;saveCfg();applyUI()}else if(t.id==='cshot'||t.id==='cgoal'){cfg.cos[t.id==='cshot'?'shot':'goal']=+t.value;saveCfg();sendCos()}};
 $('uireset').onclick=()=>{cfg.ui={...THEMES[0][1]};saveCfg();applyUI();buildAppearance()};
+// ---- crazy admin-only effects (shot effects 7 to 12, goal explosions 7 to 12) ----
+let shake=null;
+const rain=i=>`hsl(${(i*47)%360},100%,60%)`;
+function crazyShot(k,x,y,t){
+  if(k===7)trailFx={until:t+1600,rain:1};
+  else if(k===8){P({ring:1,x,y,r0:90,r1:6,c:'#8a5cff',m:800},t);P({ring:1,x,y,r0:60,r1:4,c:'#fff',m:700},t);for(let i=0;i<46;i++)P({swirl:1,x,y,r0:rnd(40,100),a0:rnd(0,6.28),w:rnd(3,6),s:rnd(2,4),c:i%2?'#b99bff':'#fff',m:rnd(500,900)},t)}
+  else if(k===9)for(let i=0;i<16;i++){const sx=x+rnd(60,520),sy=y-rnd(260,560),m=rnd(450,800);P({streak:1,x:sx,y:sy,vx:-.55,vy:.55,s:3,c:pick(['#ffb347','#ff6a1a','#ffd24a']),m,d:i*60},t);P({x:sx-.55*m,y:sy+.55*m,s:9,grow:1,c:'#ff8a1a',m:350,d:i*60+m},t)}
+  else if(k===10){const tx=x+rnd(-90,90);for(let i=0;i<3;i++){const pts=[];for(let j=0;j<=10;j++)pts.push([tx+(x-tx)*j/10+(j<10?rnd(-20,20):0),y-420+420*j/10]);P({bolt:pts,c:'#e6f0ff',m:380,d:i*90},t)}flash={t,c:'#dfe9ff',d:320,a:.8};shake={t,a:9,d:400};P({ring:1,x,y,r0:6,r1:90,c:'#bfe0ff',m:450},t)}
+  else if(k===11){for(let i=0;i<6;i++)P({ring:1,x,y,r0:6,r1:80+i*22,c:rain(i*6),m:600+i*90,d:i*80},t);for(let i=0;i<30;i++){const a=rnd(0,6.28),v=rnd(.05,.25);P({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,sq:1,s:rnd(4,8),c:rain(i*13),m:rnd(500,1000)},t)}}
+  else if(k===12){for(let i=0;i<14;i++)P({x:x+rnd(-90,90),y:y+rnd(-50,50),sq:1,w:rnd(20,140),h:rnd(2,9),c:pick(['#00ffff','#ff00ff','#ffffff']),m:rnd(150,380),d:rnd(0,160)},t);flash={t,c:'#fff',inv:1,d:150,a:.5};P({ring:1,x,y,r0:6,r1:60,c:'#00ffff',m:350},t);P({ring:1,x:x+6,y,r0:6,r1:60,c:'#ff00ff',m:350},t)}
+}
+function crazyGoal(k,x,y,t,col){
+  if(k===7){flash={t,c:'#fff',d:1000,a:1};shake={t,a:24,d:1500};for(let i=0;i<3;i++)P({ring:1,x,y,r0:10,r1:380+i*120,c:i?'#ff8a1a':'#fff',m:900+i*250,d:i*120},t);
+    for(let i=0;i<46;i++)P({x:x+rnd(-14,14),y,vx:rnd(-.012,.012),vy:-rnd(.08,.2),s:rnd(10,18),grow:1,c:pick(['#ff8a1a','#ffd24a','#5c5f66']),m:rnd(1200,2000),d:i*14},t);
+    for(let i=0;i<60;i++){const a=rnd(0,6.28),v=rnd(.03,.12);P({x:x+rnd(-20,20),y:y-170,vx:Math.cos(a)*v,vy:Math.sin(a)*v*.5,s:rnd(14,26),grow:1,c:pick(['#ff8a1a','#ffd24a','#6a6d74']),m:rnd(1300,2300),d:500},t)}}
+  else if(k===8){flash={t,c:'#fff',d:800,a:1};shake={t,a:18,d:1100};for(let i=0;i<7;i++)P({ring:1,x,y,r0:8,r1:300+i*70,c:rain(i*8),m:900+i*110,d:i*90},t);for(let i=0;i<170;i++){const a=rnd(0,6.28),v=rnd(.05,.45);P({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,s:rnd(2,5),c:rain(i*5),m:rnd(900,1800)},t)}}
+  else if(k===9){shake={t,a:14,d:1800};for(let i=0;i<18;i++){const sx=x+rnd(40,420),sy=y-rnd(300,640),m=rnd(500,800),ex=x+rnd(-70,70),ey=y+rnd(-50,50),d=i*95;P({streak:1,x:sx,y:sy,vx:(ex-sx)/m,vy:(ey-sy)/m,s:4,c:pick(['#ffb347','#ff6a1a','#ffd24a']),m,d},t);P({x:ex,y:ey,s:16,grow:1,c:'#ff7a1a',m:500,d:d+m},t);P({ring:1,x:ex,y:ey,r0:4,r1:60,c:'#ffb347',m:450,d:d+m},t)}}
+  else if(k===10){flash={t,c:'#dfe9ff',d:500,a:.8};shake={t,a:12,d:1700};for(let i=0;i<16;i++){const tx=x+rnd(-420,420),ty=y+rnd(-200,200),pts=[];for(let j=0;j<=10;j++)pts.push([tx+(j<10?rnd(-24,24):0),ty-520+520*j/10]);P({bolt:pts,c:'#e6f0ff',m:420,d:i*100},t)}}
+  else if(k===11){for(let b=0;b<14;b++){const bx=x+rnd(-340,340),by=y+rnd(-200,160);for(let i=0;i<40;i++){const a=rnd(0,6.28),v=rnd(.04,.28);P({x:bx,y:by,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g:.00025,s:rnd(2,4),c:rain(b*60+i*3),m:rnd(700,1300),d:b*160},t)}}}
+  else if(k===12){flash={t,c:'#fff',inv:1,d:700,a:.9};shake={t,a:15,d:900};for(let i=0;i<70;i++)P({x:x+rnd(-360,360),y:y+rnd(-200,200),sq:1,w:rnd(20,180),h:rnd(3,14),c:pick(['#00ffff','#ff00ff','#ffffff','#ffff00']),m:rnd(150,600),d:rnd(0,500)},t);for(let i=0;i<3;i++){P({ring:1,x,y,r0:8,r1:260+i*70,c:'#00ffff',m:700+i*100,d:i*100},t);P({ring:1,x:x+8,y,r0:8,r1:260+i*70,c:'#ff00ff',m:700+i*100,d:i*100},t)}}
+}
+const CRZ_S=['Rainbow comet','Black hole','Meteor shower','Thunderstorm','Disco','Glitch'],CRZ_G=['Nuke','Supernova','Meteor impact','Lightning storm','Rainbow barrage','Reality break'];
+function crazyOpts(id,names){const s=$(id);[...s.querySelectorAll('optgroup')].forEach(g=>g.remove());if(isAdmin){const g=document.createElement('optgroup');g.label=tr('Crazy (admins only)');g.innerHTML=names.map((n,i)=>`<option value="${7+i}">${n}</option>`).join('');s.appendChild(g)}}
+// ---- language and interface size choosers (welcome screen and Appearance tab), team names and colors ----
+const LANGS=[['en','English'],['pl','Polski'],['ru','Русский'],['es','Español']],DENS=[['compact','Compact'],['normal','Normal'],['spacious','Spacious']];
+function buildLangUI(){
+  const lb=LANGS.map(([c,n])=>`<button translate="no" data-lang="${c}"${cfg.lang===c?' class="go"':''}>${n}</button>`).join(''),db=DENS.map(([c,n])=>`<button data-dens="${c}"${cfg.density===c?' class="go"':''}>${n}</button>`).join('');
+  for(const id of['wlang','slang'])$(id).innerHTML=lb;for(const id of['wdens','sdens'])$(id).innerHTML=db;
+}
+function relang(){
+  document.documentElement.lang=cfg.lang;trNode(document.body);
+  buildMod();buildKeys();buildGp();buildAppearance();renderItems();mmSync();fillPre($('plist').value);fillMaps($('mlist').value);syncCfg();show();if(lastList)showList(lastList);setTool(tool);
+}
+addEventListener('click',e=>{const d=e.target.dataset;if(!d)return;if(d.lang){cfg.lang=d.lang;saveCfg();buildLangUI();relang()}else if(d.dens){cfg.density=d.dens;saveCfg();applyCfg();buildLangUI()}});
+$('wgo').onclick=()=>{cfg.welcomed=1;saveCfg();$('welcome').hidden=true};
+$('tgr').onchange=()=>send({t:'teams',n:[$('tn0i').value,$('tn1i').value],c:[$('tc0i').value,$('tc1i').value]});
+$('tnreset').onclick=()=>send({t:'teams',n:['',''],c:['','']});
 // ---- shared drawing helpers (game and map maker) ----
 function pitch(m,W,H,G,y1,y2){
   cx.fillStyle=m.col||'#464a4f';
@@ -406,7 +483,7 @@ function pitch(m,W,H,G,y1,y2){
   else cx.strokeRect(0,0,W,H);
   cx.beginPath();cx.moveTo(W/2,0);cx.lineTo(W/2,H);cx.stroke();
   cx.beginPath();cx.arc(W/2,H/2,60,0,7);cx.stroke();
-  cx.lineWidth=4;cx.strokeStyle='#e0473a';cx.strokeRect(-GD,y1,GD,G);cx.strokeStyle='#3f86e8';cx.strokeRect(W,y1,GD,G);
+  cx.lineWidth=4;cx.strokeStyle=TC(0);cx.strokeRect(-GD,y1,GD,G);cx.strokeStyle=TC(1);cx.strokeRect(W,y1,GD,G);
   for(const[x,y]of[[0,y1],[0,y2],[W,y1],[W,y2]])circle(x,y,5,'#e4e6e8');
 }
 function sawAt(x,y,r,t){cx.save();cx.translate(x,y);cx.rotate(t/220);cx.beginPath();for(let i=0;i<16;i++){const a=i*Math.PI/8,rd=i%2?r*.78:r*1.15;cx.lineTo(Math.cos(a)*rd,Math.sin(a)*rd)}cx.closePath();cx.fillStyle='#2a2d31';cx.fill();cx.lineWidth=3;cx.strokeStyle='#ff5a4a';cx.stroke();cx.restore();circle(x,y,r*.28,'#ff5a4a')}
@@ -434,7 +511,7 @@ const KN={obs:'Obstacle',patrol:'Patrol saw',arm:'Spinning arm',roam:'Roaming sa
 const itemOf=s=>s&&(s.list==='obs'?ed.obs[s.i]:ed.haz[s.i]);
 const PF={obs:[['x','X'],['y','Y'],['r','Radius'],['e','Bounce (0 = plain, 1.3 = bumper)']],patrol:[['x1','Start X'],['y1','Start Y'],['x2','End X'],['y2','End Y'],['r','Radius'],['v','Speed'],['s0','Start position (0 to 1)']],arm:[['x','Center X'],['y','Center Y'],['n','Discs'],['gap','Gap between discs'],['r','Radius'],['w','Spin per tick (radians)'],['a','Start angle (radians)']],roam:[['n','Count'],['r','Radius'],['v','Speed']],pool:[['x','X'],['y','Y'],['r','Radius']]};
 function renderItems(){
-  $('mitems').innerHTML=[...ed.obs.map((o,i)=>['obs',i,o.e?'Bumper':'Obstacle']),...ed.haz.map((h,i)=>['haz',i,KN[h.k]||h.k])].map(([l,i,n])=>`<button data-it="${l}:${i}"${sel&&sel.list===l&&sel.i===i?' class="on"':''}>${n} ${i+1}</button>`).join('')||'<span class="mut">No items yet. Pick a tool and click the map.</span>';
+  $('mitems').innerHTML=[...ed.obs.map((o,i)=>['obs',i,o.e?'Bumper':'Obstacle']),...ed.haz.map((h,i)=>['haz',i,KN[h.k]||h.k])].map(([l,i,n])=>`<button data-it="${l}:${i}"${sel&&sel.list===l&&sel.i===i?' class="on"':''}>${tr(n)} ${i+1}</button>`).join('')||'<span class="mut">No items yet. Pick a tool and click the map.</span>';
   const it=itemOf(sel);
   $('mprops').innerHTML=it?PF[it.k||'obs'].map(([k,l])=>`<label>${l}<input type="number" step="any" data-pf="${k}" value="${it[k]??0}"></label>`).join('')+'<div class="row"><button data-act="mirror">Mirror copy</button><button data-act="del">Delete</button></div>':'';
 }
@@ -457,7 +534,7 @@ function drawEd(t){
     if(h.k==='patrol'){cx.setLineDash([6,6]);cx.lineWidth=2;cx.strokeStyle='#ff9a2a';cx.beginPath();cx.moveTo(h.x1,h.y1);cx.lineTo(h.x2,h.y2);cx.stroke();cx.setLineDash([]);const len=Math.hypot(h.x2-h.x1,h.y2-h.y1)||1,q=((an*.06*h.v)/len+h.s0)%2,u=q<1?q:2-q;sawAt(h.x1+(h.x2-h.x1)*u,h.y1+(h.y2-h.y1)*u,h.r,t)}
     else if(h.k==='arm')for(let i=1;i<=h.n;i++){const a=h.a+h.w*an*.06;sawAt(h.x+Math.cos(a)*h.gap*i,h.y+Math.sin(a)*h.gap*i,h.r,t)}
     else if(h.k==='pool')lavaAt(h.x,h.y,h.r,2,0);
-    else if(h.k==='roam'){sawAt(W*.3,H*.5+Math.sin(an/500)*20,h.r,t);cx.fillStyle='#fff';cx.font='12px Helvetica,Arial,sans-serif';cx.textAlign='center';cx.fillText('roams x'+h.n,W*.3,H*.5+h.r+22)}
+    else if(h.k==='roam'){sawAt(W*.3,H*.5+Math.sin(an/500)*20,h.r,t);cx.fillStyle='#fff';cx.font='12px Helvetica,Arial,sans-serif';cx.textAlign='center';cx.fillText(tr('roams x{0}',h.n),W*.3,H*.5+h.r+22)}
   });
   if(pend)circle(pend.x,pend.y,6,'#ff9a2a');
   const it=itemOf(sel);
@@ -511,9 +588,9 @@ $('mm').onchange=e=>{const id=e.target.id;
   else return;
   mmSync()};
 function fillMaps(s){const ks=Object.keys(getMaps());$('mlist').innerHTML=ks.length?ks.map(k=>`<option>${esc(k)}</option>`).join(''):'<option value="">No saved maps</option>';if(s)$('mlist').value=s}
-$('msave').onclick=()=>{const n=(ed.n.trim()||'My map').slice(0,40),m=getMaps();m[n]=toSpec();localStorage.bpMaps=JSON.stringify(m);fillMaps(n);toast(`Saved map "${n}".`)};
+$('msave').onclick=()=>{const n=(ed.n.trim()||'My map').slice(0,40),m=getMaps();m[n]=toSpec();localStorage.bpMaps=JSON.stringify(m);fillMaps(n);toast(tr('Saved map "{0}".',n))};
 $('mload').onclick=()=>{const s=getMaps()[$('mlist').value];if(!s){toast('No saved map selected.');return}ed=fromSpec(s);sel=null;mmSync()};
-$('mdel').onclick=()=>{const k=$('mlist').value,m=getMaps();if(k in m){delete m[k];localStorage.bpMaps=JSON.stringify(m);fillMaps();toast(`Deleted map "${k}".`)}};
+$('mdel').onclick=()=>{const k=$('mlist').value,m=getMaps();if(k in m){delete m[k];localStorage.bpMaps=JSON.stringify(m);fillMaps();toast(tr('Deleted map "{0}".',k))}};
 $('mnew').onclick=()=>{ed=MD();sel=null;mmSync()};
 $('mexp').onclick=()=>{const j=JSON.stringify(toSpec(),null,1);$('mtext').value=j;if(navigator.clipboard)navigator.clipboard.writeText(j).catch(()=>{});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([j],{type:'application/json'}));a.download='ballplexx-map.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Exported. The map is in the text box and downloaded as a file.')};
 const impMap=txt=>{try{ed=fromSpec(JSON.parse(txt));sel=null;mmSync();toast('Map imported.')}catch{toast('That is not a valid map.')}};
@@ -551,7 +628,7 @@ function draw(t){
   const ck=lobby.size+':'+cfg.zoom;if(cam.k!==ck){cam.k=ck;cam.x=tx;cam.y=ty}
   cam.x+=(tx-cam.x)*.2;cam.y+=(ty-cam.y)*.2;
   const ccx=vw>=mw?W/2:cl(cam.x,vw/2-OX,W+OX-vw/2),ccy=vh>=mh?H/2:cl(cam.y,vh/2-MY,H+MY-vh/2);
-  cx.setTransform(sc,0,0,sc,0,0);cx.clearRect(0,0,vw,vh);cx.lineJoin='round';cx.save();cx.translate(vw/2-ccx,vh/2-ccy);
+  cx.setTransform(sc,0,0,sc,0,0);cx.clearRect(0,0,vw,vh);cx.lineJoin='round';cx.save();cx.translate(vw/2-ccx,vh/2-ccy);if(shake){const k=1-(t-shake.t)/shake.d;if(k>0&&cfg.shake)cx.translate(rnd(-1,1)*shake.a*k,rnd(-1,1)*shake.a*k);else if(k<=0)shake=null}
   pitch(m,W,H,G,y1,y2);
   for(const[ox,oy,rr,oe]of m.obs||[])circle(ox,oy,rr,oe?'#5b6068':'#2c2f33','#cfd2d6',3);
   for(const[hx,hy,hr,hk,hq]of snap.h||[])hk===0?sawAt(hx,hy,hr,t):lavaAt(hx,hy,hr,hk,hq);
@@ -571,26 +648,369 @@ function draw(t){
   fx=fx.filter(e=>t-e.t<700);                                    // demolition explosions
   for(const e of fx){const a=(t-e.t)/700;cx.globalAlpha=(1-a)*.6;circle(e.x,e.y,pr*(1+a*2.5),'#ffd24a');cx.globalAlpha=1-a;cx.lineWidth=5*(1-a)+1;cx.strokeStyle='#ff7a1a';cx.beginPath();cx.arc(e.x,e.y,pr*(1+a*5),0,7);cx.stroke();cx.globalAlpha=1}
   cx.restore();
-  if(flash&&t-flash.t<350){cx.globalAlpha=.8*(1-(t-flash.t)/350);cx.fillStyle=flash.c;cx.fillRect(0,0,vw,vh);cx.globalAlpha=1}
+  if(flash&&t-flash.t<(flash.d||350)){cx.globalAlpha=(flash.a||.8)*(1-(t-flash.t)/(flash.d||350));if(flash.inv)cx.globalCompositeOperation='difference';cx.fillStyle=flash.c;cx.fillRect(0,0,vw,vh);cx.globalCompositeOperation='source-over';cx.globalAlpha=1}
   // stamina bar
   const mine=snap.p.find(a=>a[0]===me);
   if(mine){const bx=14,by=vh-16*u;cx.fillStyle='#2c2f33';cx.fillRect(bx,by,160*u,8*u);cx.fillStyle=mine[4]<.3?'#e0473a':'#cfd2d6';cx.fillRect(bx,by,160*u*mine[4],8*u);
-    cx.fillStyle='#cfd2d6';cx.font=F(12);cx.textAlign='left';cx.fillText('Stamina',bx+168*u,by+8*u)}
+    cx.fillStyle='#cfd2d6';cx.font=F(12);cx.textAlign='left';cx.fillText(tr('Stamina'),bx+168*u,by+8*u)}
   // scoreboard: red score, time and blue score on solid blocks
-  const tl=snap.tl,sw=96*u,tw=92*u,sh=36*u,x0=vw/2-sw-tw/2,y0=8*u,my=y0+sh/2+1;
-  cx.fillStyle='#b8332a';cx.fillRect(x0,y0,sw,sh);cx.fillStyle='#111';cx.fillRect(x0+sw,y0,tw,sh);cx.fillStyle='#2d66bf';cx.fillRect(x0+sw+tw,y0,sw,sh);
+  const tl=snap.tl,sw=112*u,tw=92*u,sh=36*u,x0=vw/2-sw-tw/2,y0=8*u,my=y0+sh/2+1;
+  cx.fillStyle=BLK(0);cx.fillRect(x0,y0,sw,sh);cx.fillStyle='#111';cx.fillRect(x0+sw,y0,tw,sh);cx.fillStyle=BLK(1);cx.fillRect(x0+sw+tw,y0,sw,sh);
   cx.strokeStyle='#e4e6e8';cx.lineWidth=1.5;cx.strokeRect(x0,y0,2*sw+tw,sh);
   cx.textBaseline='middle';cx.fillStyle='#fff';
-  cx.font=F(11,1);cx.textAlign='left';cx.fillText('RED',x0+8*u,my);cx.textAlign='right';cx.fillText('BLUE',x0+2*sw+tw-8*u,my);
+  cx.font=F(11,1);cx.textAlign='left';cx.fillText(TN(0).toUpperCase().slice(0,8),x0+8*u,my);cx.textAlign='right';cx.fillText(TN(1).toUpperCase().slice(0,8),x0+2*sw+tw-8*u,my);
   cx.font=F(26,1);cx.textAlign='right';cx.fillText(snap.s[0],x0+sw-8*u,my);cx.textAlign='left';cx.fillText(snap.s[1],x0+sw+tw+8*u,my);
   cx.font=F(20,1);cx.textAlign='center';cx.fillStyle=tl<=10&&snap.ph==='play'?'#ffd24a':'#fff';cx.fillText(Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0'),vw/2,my);
-  if(mine&&mine[5]>0){cx.fillStyle='#000b';cx.fillRect(0,vh*.22,vw,40*u);cx.font=F(22,1);cx.textAlign='center';cx.fillStyle='#ffb347';cx.fillText('DEMOLISHED. Respawning in '+mine[5],vw/2,vh*.22+20*u)}
+  if(mine&&mine[5]>0){cx.fillStyle='#000b';cx.fillRect(0,vh*.22,vw,40*u);cx.font=F(22,1);cx.textAlign='center';cx.fillStyle='#ffb347';cx.fillText(tr('DEMOLISHED. Respawning in {0}',mine[5]),vw/2,vh*.22+20*u)}
   if(cfg.showfps){cx.font=F(12);cx.textAlign='left';cx.fillStyle='#8d9298';cx.fillText(fpsv+' FPS',8,vh-24*u)}
   if(snap.m){
-    cx.fillStyle='#000b';cx.fillRect(0,vh/2-34*u,vw,64*u);cx.font=F(40,1);cx.textAlign='center';
-    cx.fillStyle=snap.m.startsWith('RED')?'#ff8176':snap.m.startsWith('BLUE')?'#82b4ff':'#fff';cx.fillText(snap.m,vw/2,vh/2-2*u);
+    cx.fillStyle='#000b';cx.fillRect(0,vh/2-34*u,vw,64*u);cx.font=F(40,1);cx.textAlign='left';
+    const mg=snap.m,wh=snap.w;let tpl=mg,nm2='',col='#fff';
+    if(mg==='GOAL'&&wh){const pl=tm[wh[0]],ti=wh[1],tk=ti?'b':'r',own=!!pl&&pl.team!=='s'&&pl.team!==tk;tpl=tr(own?'{0} OWN GOAL!':'{0} SCORES!');nm2=(pl?pl.name:TN(ti)).toUpperCase();col=own?SH(pl.team,pl.cs?pl.cs[0]:4,58):SH(tk,pl&&pl.team===tk&&pl.cs?pl.cs[0]:4,58)}
+    else if(mg==='WIN0'||mg==='WIN1'){const ti=+mg[3];tpl=tr('{0} WINS!');nm2=TN(ti).toUpperCase();col=SH(ti?'b':'r',4,58)}
+    else tpl=tr(mg);
+    const[a,b2]=tpl.split('{0}'),w1=cx.measureText(a).width,w2=nm2?cx.measureText(nm2).width:0,w3=cx.measureText(b2||'').width,x1=vw/2-(w1+w2+w3)/2,yy=vh/2-2*u;
+    cx.fillStyle='#fff';cx.fillText(a,x1,yy);if(nm2){cx.fillStyle=col;cx.fillText(nm2,x1+w1,yy)}cx.fillStyle='#fff';cx.fillText(b2||'',x1+w1+w2,yy);
   }
   cx.textBaseline='alphabetic';
 }
-fillPre();mapKeys();buildKeys();buildMod();syncCfg();applyCfg();applyUI();buildAppearance();mmInit();showTab(curTab);connect();requestAnimationFrame(draw);
+// ---- translations: English | Polski | Русский | Español ----
+const DICT=`Welcome to BallPlexx|Witaj w BallPlexx|Добро пожаловать в BallPlexx|Bienvenido a BallPlexx
+Language|Język|Язык|Idioma
+Interface size|Rozmiar interfejsu|Размер интерфейса|Tamaño de la interfaz
+Compact|Kompaktowy|Компактный|Compacto
+Normal|Normalny|Обычный|Normal
+Spacious|Przestronny|Просторный|Amplio
+Compact fits more on screen. Spacious is easier to tap.|Kompaktowy mieści więcej na ekranie. Przestronny łatwiej dotknąć.|Компактный вмещает больше на экране. Просторный удобнее для касаний.|Compacto cabe más en pantalla. Amplio es más fácil de tocar.
+Continue|Dalej|Продолжить|Continuar
+Map maker|Edytor map|Редактор карт|Editor de mapas
+Settings|Ustawienia|Настройки|Ajustes
+Lobby menu|Menu lobby|Меню лобби|Menú del lobby
+Back to match|Wróć do meczu|Назад к матчу|Volver al partido
+Leave lobby|Opuść lobby|Покинуть лобби|Salir del lobby
+Your name|Twoja nazwa|Ваше имя|Tu nombre
+Player|Gracz|Игрок|Jugador
+Default controls: WASD or arrows to move, Space or X to kick, Q or E to curve, Shift to sprint, Z for ghost. You can change them under Settings.|Domyślne sterowanie: WASD lub strzałki – ruch, Spacja lub X – kopnięcie, Q lub E – podkręcenie, Shift – sprint, Z – duch. Możesz je zmienić w Ustawieniach.|Управление по умолчанию: WASD или стрелки – движение, Пробел или X – удар, Q или E – закрутка, Shift – спринт, Z – призрак. Это можно изменить в настройках.|Controles por defecto: WASD o flechas para moverte, Espacio o X para patear, Q o E para curvar, Shift para correr, Z para fantasma. Puedes cambiarlos en Ajustes.
+Create a lobby|Utwórz lobby|Создать лобби|Crear un lobby
+Lobby name|Nazwa lobby|Название лобби|Nombre del lobby
+My lobby|Moje lobby|Моё лобби|Mi lobby
+Password (optional)|Hasło (opcjonalnie)|Пароль (необязательно)|Contraseña (opcional)
+Mode|Tryb|Режим|Modo
+Infinite (inf vs inf)|Bez limitu (∞ vs ∞)|Без ограничений (∞ vs ∞)|Sin límite (∞ vs ∞)
+inf vs inf|∞ vs ∞|∞ vs ∞|∞ vs ∞
+Map|Mapa|Карта|Mapa
+Create lobby|Utwórz lobby|Создать лобби|Crear lobby
+Password for {0}|Hasło do: {0}|Пароль для {0}|Contraseña de {0}
+Password|Hasło|Пароль|Contraseña
+Join|Dołącz|Войти|Unirse
+Cancel|Anuluj|Отмена|Cancelar
+Open lobbies|Otwarte lobby|Открытые лобби|Lobbies abiertos
+Connecting...|Łączenie...|Подключение...|Conectando...
+No lobbies yet. Create one above.|Brak lobby. Utwórz je powyżej.|Лобби пока нет. Создайте его выше.|Aún no hay lobbies. Crea uno arriba.
+Disconnected. Reconnecting...|Rozłączono. Ponowne łączenie...|Соединение потеряно. Переподключение...|Desconectado. Reconectando...
+Players: {0}|Gracze: {0}|Игроков: {0}|Jugadores: {0}
+waiting|oczekiwanie|ожидание|esperando
+match in progress|mecz trwa|матч идёт|partido en curso
+password protected|chronione hasłem|защищено паролем|protegido con contraseña
+Red|Czerwoni|Красные|Rojo
+Blue|Niebiescy|Синие|Azul
+Spectators|Widzowie|Зрители|Espectadores
+Join {0}|Dołącz: {0}|Войти: {0}|Unirse: {0}
+Spectate|Obserwuj|Наблюдать|Observar
+Add bot|Dodaj bota|Добавить бота|Añadir bot
+Start match|Rozpocznij mecz|Начать матч|Iniciar partido
+End match|Zakończ mecz|Закончить матч|Terminar partido
+You are the host. Teams can be uneven, and bots count toward the team size.|Jesteś gospodarzem. Drużyny mogą być nierówne, a boty wliczają się do wielkości drużyny.|Вы хозяин. Команды могут быть неравными, а боты учитываются в размере команды.|Eres el anfitrión. Los equipos pueden ser desiguales y los bots cuentan para el tamaño del equipo.
+The match is in progress.|Mecz trwa.|Матч идёт.|El partido está en curso.
+Waiting for the host to start the match.|Oczekiwanie, aż gospodarz rozpocznie mecz.|Ждём, пока хозяин начнёт матч.|Esperando a que el anfitrión inicie el partido.
+bot|bot|бот|bot
+host|gospodarz|хозяин|anfitrión
+you|ty|вы|tú
+Remove|Usuń|Убрать|Quitar
+Kick out|Wyrzuć|Выгнать|Expulsar
+Ban|Zbanuj|Забанить|Vetar
+Unban|Odbanuj|Разбанить|Perdonar
+Empty|Pusto|Пусто|Vacío
+Nobody is banned.|Nikt nie jest zbanowany.|Никто не забанен.|Nadie está vetado.
+{0} on {1}|{0} na mapie {1}|{0}, карта {1}|{0} en {1}
+Custom: {0}|Własna: {0}|Своя: {0}|Personalizado: {0}
+Host settings|Ustawienia gospodarza|Настройки хозяина|Ajustes del anfitrión
+Match|Mecz|Матч|Partido
+Players|Gracze|Игроки|Jugadores
+Ball and goals|Piłka i bramki|Мяч и ворота|Balón y porterías
+Teams|Drużyny|Команды|Equipos
+Left team name|Nazwa lewej drużyny|Название левой команды|Nombre del equipo izquierdo
+Right team name|Nazwa prawej drużyny|Название правой команды|Nombre del equipo derecho
+Left team color|Kolor lewej drużyny|Цвет левой команды|Color del equipo izquierdo
+Right team color|Kolor prawej drużyny|Цвет правой команды|Color del equipo derecho
+Reset team names and colors|Zresetuj nazwy i kolory drużyn|Сбросить названия и цвета команд|Restablecer nombres y colores de equipos
+Score limit (goals)|Limit goli|Лимит голов|Límite de goles
+Match length (minutes)|Długość meczu (minuty)|Длительность матча (минуты)|Duración del partido (minutos)
+Bot difficulty (1 easy, 10 hard)|Trudność botów (1 łatwe, 10 trudne)|Сложность ботов (1 легко, 10 сложно)|Dificultad de los bots (1 fácil, 10 difícil)
+Allow ghost mode|Zezwalaj na tryb ducha|Разрешить режим призрака|Permitir modo fantasma
+Speed (x)|Prędkość (x)|Скорость (x)|Velocidad (x)
+Friction (higher = less sliding)|Tarcie (wyższe = mniej ślizgania)|Трение (выше = меньше скольжение)|Fricción (más = menos deslizamiento)
+Size (x)|Rozmiar (x)|Размер (x)|Tamaño (x)
+Sprint boost (x)|Przyspieszenie sprintu (x)|Ускорение спринта (x)|Impulso de carrera (x)
+Stamina drain (0 = endless)|Zużycie wytrzymałości (0 = bez limitu)|Расход выносливости (0 = бесконечно)|Gasto de resistencia (0 = infinita)
+Kick power (x)|Siła kopnięcia (x)|Сила удара (x)|Fuerza de patada (x)
+Curve strength (x)|Siła podkręcenia (x)|Сила закрутки (x)|Fuerza de efecto (x)
+Players collide with each other|Gracze zderzają się ze sobą|Игроки сталкиваются друг с другом|Los jugadores chocan entre sí
+Players can pass through walls|Gracze mogą przenikać przez ściany|Игроки могут проходить сквозь стены|Los jugadores atraviesan las paredes
+Hazards demolish players (hazard maps)|Zagrożenia niszczą graczy (mapy z pułapkami)|Ловушки уничтожают игроков (карты с ловушками)|Los peligros destruyen jugadores (mapas con peligros)
+Respawn time after demolition (seconds)|Czas odrodzenia po zniszczeniu (sekundy)|Время возрождения после уничтожения (секунды)|Tiempo de reaparición tras la destrucción (segundos)
+Ball friction (higher = slows faster)|Tarcie piłki (wyższe = szybsze zwalnianie)|Трение мяча (выше = быстрее замедляется)|Fricción del balón (más = frena antes)
+Bounciness|Sprężystość|Упругость|Rebote
+Ball size (x)|Rozmiar piłki (x)|Размер мяча (x)|Tamaño del balón (x)
+Ball weight (x)|Waga piłki (x)|Вес мяча (x)|Peso del balón (x)
+Goal size (x)|Rozmiar bramki (x)|Размер ворот (x)|Tamaño de la portería (x)
+Lobby password|Hasło lobby|Пароль лобби|Contraseña del lobby
+No password|Brak hasła|Без пароля|Sin contraseña
+Set password|Ustaw hasło|Установить пароль|Poner contraseña
+Remove password|Usuń hasło|Убрать пароль|Quitar contraseña
+Banned from this lobby|Zbanowani w tym lobby|Забанены в этом лобби|Vetados de este lobby
+Presets, import and export|Presety, import i eksport|Пресеты, импорт и экспорт|Preajustes, importar y exportar
+Preset name|Nazwa presetu|Название пресета|Nombre del preajuste
+Save current settings|Zapisz obecne ustawienia|Сохранить текущие настройки|Guardar ajustes actuales
+Load|Wczytaj|Загрузить|Cargar
+Delete|Usuń|Удалить|Eliminar
+Export|Eksportuj|Экспорт|Exportar
+Import from text|Importuj z tekstu|Импорт из текста|Importar desde texto
+Import from file|Importuj z pliku|Импорт из файла|Importar desde archivo
+Exported settings appear here. Paste settings here and press Import from text to apply them.|Tutaj pojawią się wyeksportowane ustawienia. Wklej ustawienia tutaj i naciśnij „Importuj z tekstu”, aby je zastosować.|Здесь появятся экспортированные настройки. Вставьте настройки сюда и нажмите «Импорт из текста», чтобы применить их.|Aquí aparecen los ajustes exportados. Pega aquí los ajustes y pulsa «Importar desde texto» para aplicarlos.
+Reset settings to defaults|Przywróć ustawienia domyślne|Сбросить настройки по умолчанию|Restablecer ajustes predeterminados
+Map and mode only change between matches. Presets are stored in this browser.|Mapa i tryb zmieniają się tylko między meczami. Presety są zapisane w tej przeglądarce.|Карта и режим меняются только между матчами. Пресеты хранятся в этом браузере.|El mapa y el modo solo cambian entre partidos. Los preajustes se guardan en este navegador.
+No saved presets|Brak zapisanych presetów|Нет сохранённых пресетов|No hay preajustes guardados
+Keyboard|Klawiatura|Клавиатура|Teclado
+Touch|Dotyk|Сенсор|Táctil
+Controller|Kontroler|Контроллер|Mando
+Graphics|Grafika|Графика|Gráficos
+Appearance|Wygląd|Оформление|Apariencia
+Click a slot, then press a key. Backspace clears the slot and Escape cancels.|Kliknij pole, a potem naciśnij klawisz. Backspace czyści pole, Escape anuluje.|Нажмите на ячейку, затем на клавишу. Backspace очищает ячейку, Escape отменяет.|Haz clic en una casilla y pulsa una tecla. Retroceso la borra y Escape cancela.
+Move left|Ruch w lewo|Влево|Mover a la izquierda
+Move right|Ruch w prawo|Вправо|Mover a la derecha
+Move up|Ruch w górę|Вверх|Mover arriba
+Move down|Ruch w dół|Вниз|Mover abajo
+Kick|Kopnięcie|Удар|Patada
+Curve left|Podkręć w lewo|Закрутка влево|Efecto a la izquierda
+Curve right|Podkręć w prawo|Закрутка вправо|Efecto a la derecha
+Sprint|Sprint|Спринт|Correr
+Ghost|Duch|Призрак|Fantasma
+Reset keyboard|Zresetuj klawiaturę|Сбросить клавиатуру|Restablecer teclado
+None|Brak|Нет|Ninguno
+Press a key...|Naciśnij klawisz...|Нажмите клавишу...|Pulsa una tecla...
+Show touch controls|Pokaż sterowanie dotykowe|Показывать сенсорное управление|Mostrar controles táctiles
+Automatic (touch devices only)|Automatycznie (tylko urządzenia dotykowe)|Автоматически (только сенсорные устройства)|Automático (solo dispositivos táctiles)
+Always|Zawsze|Всегда|Siempre
+Never|Nigdy|Никогда|Nunca
+Control size (x)|Rozmiar przycisków (x)|Размер кнопок (x)|Tamaño de los controles (x)
+Control opacity (0.2 to 1)|Przezroczystość przycisków (0,2–1)|Прозрачность кнопок (0,2–1)|Opacidad de los controles (0,2 a 1)
+Buttons to show|Przyciski do pokazania|Показываемые кнопки|Botones a mostrar
+Edit layout|Edytuj układ|Изменить расположение|Editar disposición
+Reset touch settings|Zresetuj ustawienia dotyku|Сбросить настройки сенсора|Restablecer ajustes táctiles
+Curve L|Podkręć L|Закрутка Л|Efecto I
+Curve R|Podkręć P|Закрутка П|Efecto D
+Drag the controls to move them.|Przeciągnij przyciski, aby je przesunąć.|Перетащите кнопки, чтобы переместить их.|Arrastra los controles para moverlos.
+Reset layout|Zresetuj układ|Сбросить расположение|Restablecer disposición
+Done|Gotowe|Готово|Listo
+Controllers need HTTPS or localhost. Open the game over HTTPS to use one.|Kontrolery wymagają HTTPS lub localhost. Otwórz grę przez HTTPS, aby ich używać.|Для контроллеров нужен HTTPS или localhost. Откройте игру по HTTPS, чтобы использовать контроллер.|Los mandos requieren HTTPS o localhost. Abre el juego por HTTPS para usar uno.
+Connected: {0}|Połączono: {0}|Подключено: {0}|Conectado: {0}
+No controller detected. Connect one and press a button.|Nie wykryto kontrolera. Podłącz go i naciśnij przycisk.|Контроллер не найден. Подключите его и нажмите кнопку.|No se detecta ningún mando. Conecta uno y pulsa un botón.
+Move with the left stick or the D-pad. Click a slot, then press a controller button. Backspace clears the slot and Escape cancels.|Poruszaj się lewym drążkiem lub krzyżakiem. Kliknij pole, a potem naciśnij przycisk kontrolera. Backspace czyści pole, Escape anuluje.|Двигайтесь левым стиком или крестовиной. Нажмите на ячейку, затем на кнопку контроллера. Backspace очищает ячейку, Escape отменяет.|Muévete con el stick izquierdo o la cruceta. Haz clic en una casilla y pulsa un botón del mando. Retroceso la borra y Escape cancela.
+Press a button...|Naciśnij przycisk...|Нажмите кнопку...|Pulsa un botón...
+Button {0}|Przycisk {0}|Кнопка {0}|Botón {0}
+Stick deadzone|Martwa strefa drążka|Мёртвая зона стика|Zona muerta del stick
+Reset controller|Zresetuj kontroler|Сбросить контроллер|Restablecer mando
+Render resolution|Rozdzielczość renderowania|Разрешение отрисовки|Resolución de renderizado
+Automatic (match screen)|Automatycznie (dopasuj do ekranu)|Автоматически (под экран)|Automática (según la pantalla)
+Low (0.5x)|Niska (0,5x)|Низкое (0,5x)|Baja (0,5x)
+Standard (1x)|Standardowa (1x)|Стандартное (1x)|Estándar (1x)
+High (2x)|Wysoka (2x)|Высокое (2x)|Alta (2x)
+Frame limit|Limit klatek|Лимит кадров|Límite de fotogramas
+Unlimited|Bez limitu|Без ограничений|Sin límite
+Camera on big maps|Kamera na dużych mapach|Камера на больших картах|Cámara en mapas grandes
+Follow the ball and keep me in view|Śledź piłkę i trzymaj mnie w kadrze|Следить за мячом, не теряя меня из виду|Seguir el balón y mantenerme a la vista
+Follow me|Śledź mnie|Следить за мной|Seguirme
+GUI size (x)|Rozmiar interfejsu (x)|Размер интерфейса (x)|Tamaño de la interfaz (x)
+Zoom on big maps (x)|Powiększenie na dużych mapach (x)|Масштаб на больших картах (x)|Zoom en mapas grandes (x)
+Movement smoothing (1 = off)|Wygładzanie ruchu (1 = wył.)|Сглаживание движения (1 = выкл.)|Suavizado de movimiento (1 = no)
+Show shot and goal effects|Pokaż efekty strzałów i goli|Показывать эффекты ударов и голов|Mostrar efectos de tiros y goles
+Screen shake from effects|Drżenie ekranu od efektów|Тряска экрана от эффектов|Temblor de pantalla por efectos
+Show ball curve trail|Pokaż ślad podkręconej piłki|Показывать след закрученного мяча|Mostrar estela del efecto del balón
+Show player names|Pokaż nazwy graczy|Показывать имена игроков|Mostrar nombres de jugadores
+Show FPS counter|Pokaż licznik FPS|Показывать счётчик FPS|Mostrar contador de FPS
+Player style|Styl gracza|Стиль игрока|Estilo del jugador
+Other players see your style. Pick a shade of your team color:|Inni gracze widzą twój styl. Wybierz odcień koloru drużyny:|Другие игроки видят ваш стиль. Выберите оттенок цвета команды:|Los demás jugadores ven tu estilo. Elige un tono del color de tu equipo:
+Shot effect|Efekt strzału|Эффект удара|Efecto de tiro
+Goal explosion|Eksplozja gola|Взрыв гола|Explosión de gol
+Sparks|Iskry|Искры|Chispas
+Shockwave|Fala uderzeniowa|Ударная волна|Onda expansiva
+Flame trail|Ognisty ślad|Огненный след|Estela de fuego
+Lightning|Błyskawice|Молнии|Rayos
+Confetti|Konfetti|Конфетти|Confeti
+Smoke|Dym|Дым|Humo
+Fireworks|Fajerwerki|Фейерверк|Fuegos artificiales
+Confetti rain|Deszcz konfetti|Дождь из конфетти|Lluvia de confeti
+Pixel burst|Wybuch pikseli|Пиксельный взрыв|Explosión de píxeles
+Lightning flash|Błysk pioruna|Вспышка молнии|Destello de rayo
+Smoke and embers|Dym i żar|Дым и угли|Humo y brasas
+Crazy (admins only)|Szalone (tylko admini)|Безумные (только админы)|Locos (solo admins)
+Rainbow comet|Tęczowa kometa|Радужная комета|Cometa arcoíris
+Black hole|Czarna dziura|Чёрная дыра|Agujero negro
+Meteor shower|Deszcz meteorów|Метеоритный дождь|Lluvia de meteoros
+Thunderstorm|Burza|Гроза|Tormenta
+Glitch|Glitch|Глитч|Glitch
+Nuke|Bomba atomowa|Ядерный взрыв|Bomba nuclear
+Supernova|Supernowa|Сверхновая|Supernova
+Meteor impact|Uderzenie meteorów|Падение метеоритов|Impacto de meteoritos
+Lightning storm|Burza z piorunami|Грозовой шторм|Tormenta de rayos
+Rainbow barrage|Tęczowa salwa|Радужный залп|Salva arcoíris
+Reality break|Pęknięcie rzeczywistości|Разрыв реальности|Ruptura de la realidad
+Shade {0}|Odcień {0}|Оттенок {0}|Tono {0}
+Interface colors|Kolory interfejsu|Цвета интерфейса|Colores de la interfaz
+Gray|Szary|Серый|Gris
+Light|Jasny|Светлый|Claro
+Midnight|Północ|Полночь|Medianoche
+Forest|Las|Лес|Bosque
+Violet|Fiolet|Фиолетовый|Violeta
+Background|Tło|Фон|Fondo
+Panels|Panele|Панели|Paneles
+Text|Tekst|Текст|Texto
+Accent|Akcent|Акцент|Acento
+Reset colors|Zresetuj kolory|Сбросить цвета|Restablecer colores
+Close|Zamknij|Закрыть|Cerrar
+Map name|Nazwa mapy|Название карты|Nombre del mapa
+Shape|Kształt|Форма|Forma
+Rectangle|Prostokąt|Прямоугольник|Rectángulo
+Circle|Koło|Круг|Círculo
+Width|Szerokość|Ширина|Anchura
+Height|Wysokość|Высота|Altura
+Radius|Promień|Радиус|Radio
+Goal size|Rozmiar bramki|Размер ворот|Tamaño de la portería
+Pitch color|Kolor boiska|Цвет поля|Color del campo
+Select and move|Zaznacz i przesuń|Выбрать и двигать|Seleccionar y mover
+Obstacle|Przeszkoda|Препятствие|Obstáculo
+Bouncy bumper|Sprężysty odbijacz|Упругий отбойник|Bumper elástico
+Patrol saw|Piła patrolowa|Патрульная пила|Sierra patrulla
+Spinning arm|Wirujące ramię|Вращающаяся лопасть|Brazo giratorio
+Roaming saws|Wędrujące piły|Блуждающие пилы|Sierras errantes
+Lava pit|Dół z lawą|Лавовая яма|Pozo de lava
+Mirror new items|Odbijaj nowe elementy|Зеркалить новые объекты|Reflejar elementos nuevos
+Animate preview|Animuj podgląd|Анимировать предпросмотр|Animar vista previa
+Click an item to select it and drag to move it. Patrol saws have a handle at each end.|Kliknij element, aby go zaznaczyć, i przeciągnij, aby przesunąć. Piły patrolowe mają uchwyt na każdym końcu.|Нажмите на объект, чтобы выбрать его, и перетащите. У патрульных пил есть маркер на каждом конце.|Haz clic en un elemento para seleccionarlo y arrástralo para moverlo. Las sierras patrulla tienen un tirador en cada extremo.
+Click the map to place a round obstacle.|Kliknij mapę, aby umieścić okrągłą przeszkodę.|Нажмите на карту, чтобы поставить круглое препятствие.|Haz clic en el mapa para colocar un obstáculo redondo.
+Click the map to place a bouncy bumper.|Kliknij mapę, aby umieścić sprężysty odbijacz.|Нажмите на карту, чтобы поставить упругий отбойник.|Haz clic en el mapa para colocar un bumper elástico.
+Click where the saw starts, then where it ends.|Kliknij miejsce startu piły, a potem jej końca.|Нажмите, где пила начинает путь, затем где заканчивает.|Haz clic donde empieza la sierra y luego donde termina.
+Click where the spinning arm should be centered.|Kliknij miejsce środka wirującego ramienia.|Нажмите туда, где должен быть центр вращающейся лопасти.|Haz clic donde debe estar el centro del brazo giratorio.
+Click the map to place a lava pit that is always deadly.|Kliknij mapę, aby umieścić dół z lawą, który zawsze zabija.|Нажмите на карту, чтобы поставить лавовую яму, которая всегда смертельна.|Haz clic en el mapa para colocar un pozo de lava siempre mortal.
+Click once to add roaming saws that bounce around the whole map.|Kliknij raz, aby dodać wędrujące piły odbijające się po całej mapie.|Нажмите один раз, чтобы добавить блуждающие пилы, отскакивающие по всей карте.|Haz clic una vez para añadir sierras errantes que rebotan por todo el mapa.
+Items|Elementy|Объекты|Elementos
+No items yet. Pick a tool and click the map.|Brak elementów. Wybierz narzędzie i kliknij mapę.|Объектов пока нет. Выберите инструмент и нажмите на карту.|Aún no hay elementos. Elige una herramienta y haz clic en el mapa.
+Bumper|Odbijacz|Отбойник|Bumper
+Bounce (0 = plain, 1.3 = bumper)|Odbicie (0 = zwykła, 1,3 = odbijacz)|Отскок (0 = обычное, 1,3 = отбойник)|Rebote (0 = normal, 1,3 = bumper)
+Start X|Początek X|Начало X|Inicio X
+Start Y|Początek Y|Начало Y|Inicio Y
+End X|Koniec X|Конец X|Fin X
+End Y|Koniec Y|Конец Y|Fin Y
+Speed|Prędkość|Скорость|Velocidad
+Start position (0 to 1)|Pozycja startowa (0–1)|Начальная позиция (0–1)|Posición inicial (0 a 1)
+Center X|Środek X|Центр X|Centro X
+Center Y|Środek Y|Центр Y|Centro Y
+Discs|Tarcze|Диски|Discos
+Gap between discs|Odstęp między tarczami|Расстояние между дисками|Separación entre discos
+Spin per tick (radians)|Obrót na tyknięcie (radiany)|Вращение за тик (радианы)|Giro por tic (radianes)
+Start angle (radians)|Kąt początkowy (radiany)|Начальный угол (радианы)|Ángulo inicial (radianes)
+Count|Liczba|Количество|Cantidad
+Mirror copy|Kopia lustrzana|Зеркальная копия|Copia espejo
+Lava splats|Plamy lawy|Всплески лавы|Salpicaduras de lava
+Lava splats erupt during matches|Plamy lawy tryskają podczas meczów|Всплески лавы появляются во время матчей|Las salpicaduras de lava brotan durante los partidos
+Seconds between splats|Sekundy między plamami|Секунд между всплесками|Segundos entre salpicaduras
+Smallest radius|Najmniejszy promień|Наименьший радиус|Radio mínimo
+Largest radius|Największy promień|Наибольший радиус|Radio máximo
+Warning (seconds)|Ostrzeżenie (sekundy)|Предупреждение (секунды)|Aviso (segundos)
+Deadly for (seconds)|Śmiertelne przez (sekundy)|Смертельно в течение (секунды)|Mortal durante (segundos)
+Save, load and share|Zapisz, wczytaj i udostępnij|Сохранить, загрузить и поделиться|Guardar, cargar y compartir
+Save|Zapisz|Сохранить|Guardar
+New map|Nowa mapa|Новая карта|Mapa nuevo
+No saved maps|Brak zapisanych map|Нет сохранённых карт|No hay mapas guardados
+Exported maps appear here. Paste a map here and press Import from text.|Tutaj pojawią się wyeksportowane mapy. Wklej mapę tutaj i naciśnij „Importuj z tekstu”.|Здесь появятся экспортированные карты. Вставьте карту сюда и нажмите «Импорт из текста».|Aquí aparecen los mapas exportados. Pega aquí un mapa y pulsa «Importar desde texto».
+Use in my lobby|Użyj w moim lobby|Использовать в моём лобби|Usar en mi lobby
+Test alone with a bot|Testuj samemu z botem|Проверить в одиночку с ботом|Probar a solas con un bot
+roams x{0}|wędruje x{0}|блуждает x{0}|errante x{0}
+Password set.|Hasło ustawione.|Пароль установлен.|Contraseña establecida.
+Password removed.|Hasło usunięte.|Пароль убран.|Contraseña quitada.
+That is not a valid BallPlexx settings file.|To nie jest poprawny plik ustawień BallPlexx.|Это не корректный файл настроек BallPlexx.|Ese no es un archivo de ajustes de BallPlexx válido.
+Settings applied. Map and mode change between matches.|Ustawienia zastosowane. Mapa i tryb zmienią się między meczami.|Настройки применены. Карта и режим изменятся между матчами.|Ajustes aplicados. El mapa y el modo cambian entre partidos.
+Settings applied.|Ustawienia zastosowane.|Настройки применены.|Ajustes aplicados.
+Enter a name for the preset.|Podaj nazwę presetu.|Введите название пресета.|Escribe un nombre para el preajuste.
+Saved preset "{0}".|Zapisano preset „{0}”.|Пресет «{0}» сохранён.|Preajuste «{0}» guardado.
+No preset selected.|Nie wybrano presetu.|Пресет не выбран.|Ningún preajuste seleccionado.
+Deleted preset "{0}".|Usunięto preset „{0}”.|Пресет «{0}» удалён.|Preajuste «{0}» eliminado.
+Exported. The settings are in the text box and downloaded as a file.|Wyeksportowano. Ustawienia są w polu tekstowym i pobrane jako plik.|Экспортировано. Настройки в текстовом поле и скачаны файлом.|Exportado. Los ajustes están en el cuadro de texto y descargados como archivo.
+That is not valid JSON.|To nie jest poprawny JSON.|Это не корректный JSON.|Eso no es un JSON válido.
+Saved map "{0}".|Zapisano mapę „{0}”.|Карта «{0}» сохранена.|Mapa «{0}» guardado.
+No saved map selected.|Nie wybrano zapisanej mapy.|Сохранённая карта не выбрана.|Ningún mapa guardado seleccionado.
+Deleted map "{0}".|Usunięto mapę „{0}”.|Карта «{0}» удалена.|Mapa «{0}» eliminado.
+Exported. The map is in the text box and downloaded as a file.|Wyeksportowano. Mapa jest w polu tekstowym i pobrana jako plik.|Экспортировано. Карта в текстовом поле и скачана файлом.|Exportado. El mapa está en el cuadro de texto y descargado como archivo.
+Map imported.|Zaimportowano mapę.|Карта импортирована.|Mapa importado.
+That is not a valid map.|To nie jest poprawna mapa.|Это не корректная карта.|Ese no es un mapa válido.
+Open a lobby you host and use this between matches.|Otwórz lobby, które prowadzisz, i użyj tego między meczami.|Откройте своё лобби и используйте это между матчами.|Abre un lobby que organices y usa esto entre partidos.
+Map sent to the lobby.|Mapa wysłana do lobby.|Карта отправлена в лобби.|Mapa enviado al lobby.
+Leave your lobby first, or use "Use in my lobby".|Najpierw opuść lobby albo użyj „Użyj w moim lobby”.|Сначала покиньте лобби или используйте «Использовать в моём лобби».|Sal primero de tu lobby o usa «Usar en mi lobby».
+That lobby no longer exists.|To lobby już nie istnieje.|Этого лобби больше нет.|Ese lobby ya no existe.
+Lobby is full.|Lobby jest pełne.|Лобби заполнено.|El lobby está lleno.
+You are banned from this lobby.|Masz bana w tym lobby.|Вы забанены в этом лобби.|Estás vetado de este lobby.
+Too many wrong passwords. Wait a few seconds.|Zbyt wiele błędnych haseł. Odczekaj kilka sekund.|Слишком много неверных паролей. Подождите несколько секунд.|Demasiadas contraseñas incorrectas. Espera unos segundos.
+Wrong password.|Błędne hasło.|Неверный пароль.|Contraseña incorrecta.
+That team is full.|Ta drużyna jest pełna.|Эта команда заполнена.|Ese equipo está lleno.
+You cannot remove an admin.|Nie możesz usunąć admina.|Нельзя убрать админа.|No puedes quitar a un admin.
+Could not ban: this player's IP is unknown, so they were only kicked.|Nie można zbanować: IP gracza jest nieznane, więc został tylko wyrzucony.|Не удалось забанить: IP игрока неизвестен, поэтому его только выгнали.|No se pudo vetar: se desconoce la IP del jugador, así que solo fue expulsado.
+You were banned from that lobby.|Dostałeś bana w tym lobby.|Вас забанили в этом лобби.|Te vetaron de ese lobby.
+You were kicked from the lobby.|Wyrzucono cię z lobby.|Вас выгнали из лобби.|Te expulsaron del lobby.
+That map is not valid.|Ta mapa jest niepoprawna.|Эта карта некорректна.|Ese mapa no es válido.
+Too many attempts. Try again later.|Zbyt wiele prób. Spróbuj później.|Слишком много попыток. Попробуйте позже.|Demasiados intentos. Inténtalo más tarde.
+Stamina|Wytrzymałość|Выносливость|Resistencia
+{0} SCORES!|{0} STRZELA!|{0} ЗАБИВАЕТ!|¡{0} ANOTA!
+{0} OWN GOAL!|{0} – GOL SAMOBÓJCZY!|{0} – АВТОГОЛ!|¡{0} – GOL EN PROPIA!
+{0} WINS!|{0} WYGRYWA!|{0} ПОБЕЖДАЕТ!|¡{0} GANA!
+DRAW|REMIS|НИЧЬЯ|EMPATE
+DEMOLISHED. Respawning in {0}|ZNISZCZONO. Odrodzenie za {0}|УНИЧТОЖЕН. Возрождение через {0}|DESTRUIDO. Reaparece en {0}
+Small|Mała|Маленькая|Pequeño
+Medium|Średnia|Средняя|Mediano
+Large|Duża|Большая|Grande
+Closet (tiny chaos)|Szafa (mały chaos)|Чулан (маленький хаос)|Armario (caos diminuto)
+Corridor (long and narrow)|Korytarz (długi i wąski)|Коридор (длинный и узкий)|Pasillo (largo y estrecho)
+Marathon (extremely long)|Maraton (ekstremalnie długa)|Марафон (очень длинная)|Maratón (larguísimo)
+Huge|Ogromna|Огромная|Enorme
+Arena (circle)|Arena (koło)|Арена (круг)|Arena (círculo)
+Bowl (small circle)|Misa (małe koło)|Чаша (малый круг)|Cuenco (círculo pequeño)
+Pinball (bouncy bumpers)|Flipper (sprężyste odbijacze)|Пинбол (упругие отбойники)|Pinball (bumpers elásticos)
+Pillars|Filary|Колонны|Pilares
+Bumper bowl (circle with bumpers)|Misa z odbijaczami (koło)|Чаша с отбойниками (круг)|Cuenco con bumpers (círculo)
+Volcano (lava splats demolish you)|Wulkan (plamy lawy niszczą graczy)|Вулкан (всплески лавы уничтожают)|Volcán (las salpicaduras de lava te destruyen)
+Sawmill (moving saws)|Tartak (ruchome piły)|Лесопилка (движущиеся пилы)|Aserradero (sierras en movimiento)
+Windmill (spinning arms)|Wiatrak (wirujące ramiona)|Ветряк (вращающиеся лопасти)|Molino (brazos giratorios)
+Wrecking balls (roaming killers)|Kule burzące (wędrujący zabójcy)|Шары-разрушители (блуждающие убийцы)|Bolas de demolición (asesinas errantes)
+Disco|Disco|Диско|Disco
+Space|Spacja|Пробел|Espacio
+Left|Lewo|Влево|Izquierda
+Right|Prawo|Вправо|Derecha
+Up|Góra|Вверх|Arriba
+Down|Dół|Вниз|Abajo
+ShiftLeft|Lewy Shift|Левый Shift|Shift izq.
+ShiftRight|Prawy Shift|Правый Shift|Shift der.
+Back|Wstecz|Назад|Atrás
+Start|Start|Старт|Inicio
+Home|Home|Домой|Inicio
+D-up|Krzyżak w górę|Крестовина вверх|Cruceta arriba
+D-down|Krzyżak w dół|Крестовина вниз|Cruceta abajo
+D-left|Krzyżak w lewo|Крестовина влево|Cruceta izquierda
+D-right|Krzyżak w prawo|Крестовина вправо|Cruceta derecha`;
+DICT.split('\n').forEach(l=>{const p=l.split('|');if(p.length===4)DT[p[0]]=[p[1],p[2],p[3]]});
+const mo=new MutationObserver(ms=>{for(const m of ms){if(m.type==='childList')m.addedNodes.forEach(trNode);else trNode(m.target)}});
+buildLangUI();document.documentElement.lang=cfg.lang;
+fillPre();mapKeys();buildKeys();buildMod();syncCfg();applyCfg();applyUI();buildAppearance();mmInit();showTab(curTab);
+trNode(document.body);mo.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['placeholder','title']});
+$('welcome').hidden=!!cfg.welcomed;
+connect();requestAnimationFrame(draw);
 </script></body></html>

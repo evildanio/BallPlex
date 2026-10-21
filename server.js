@@ -59,6 +59,12 @@ function cleanMap(r, free) {
   return m;
 }
 const mapOf = L => (L.size === -1 && L.cmap) || MAPS[L.size] || MAPS[1];
+// custom team names (up to 14 characters) and colors; an empty entry means the default Red or Blue
+function setTeams(L, n, c) {
+  const hex = x => /^#[0-9a-fA-F]{6}$/.test(x) ? x : '';
+  if (Array.isArray(n)) L.tn = [0, 1].map(i => clean(n[i], 14, ''));
+  if (Array.isArray(c)) L.tcl = [0, 1].map(i => hex(c[i]));
+}
 const isFree = (L, p) => !!((L.host && L.host.admin) || (p && p.admin));   // admin lobbies (and admin edits) skip the host setting limits
 function getMap(L) {                      // geometry for the lobby's map and goal-size setting (cached per lobby)
   const m = mapOf(L), key = L.size + '|' + L.set.gs + '|' + L.cv;
@@ -128,7 +134,7 @@ function pushList() {
 }
 function info(L) {
   const msg = { t: 'lobby', id: L.id, name: L.name, mode: L.mode, size: L.size, set: L.set, host: L.host.id, ph: L.ph,
-    players: L.players.map(q => ({ id: q.id, name: q.name, team: q.team, bot: !!q.bot, admin: !!q.admin, cs: q.cs })), cmap: L.cmap || undefined, free: !!(L.host && L.host.admin) };
+    players: L.players.map(q => ({ id: q.id, name: q.name, team: q.team, bot: !!q.bot, admin: !!q.admin, cs: q.cs })), cmap: L.cmap || undefined, free: !!(L.host && L.host.admin), tn: L.tn, tcl: L.tcl };
   L.players.forEach(p => p.ws && send(p.ws, p === L.host || p.admin ? { ...msg, pw: L.pw, bans: L.bans.map(({ id, name }) => ({ id, name })) } : msg));   // only the host sees the password and the ban list
   pushList();
 }
@@ -166,7 +172,7 @@ function handle(p, m) {
     case 'create': {
       if (L) return;
       const n = { id: ++lid, name: clean(m.lname, 24, p.name + "'s lobby"), mode: [0, 1, 2, 3].includes(m.mode) ? m.mode : 2,   // 0 = infinite (inf vs inf)
-        size: Number.isInteger(m.size) && MAPS[m.size] ? m.size : 1, set: { ...DEF }, host: p, players: [p], ph: 'lobby', g: null, bans: [], bid: 0, cmap: null, cv: 0, pw: String(m.pass || '').slice(0, 32) };
+        size: Number.isInteger(m.size) && MAPS[m.size] ? m.size : 1, set: { ...DEF }, host: p, players: [p], ph: 'lobby', g: null, bans: [], bid: 0, cmap: null, cv: 0, tn: ['', ''], tcl: ['', ''], pw: String(m.pass || '').slice(0, 32) };
       lobbies.set(n.id, n); p.L = n; p.team = 's'; info(n); break;
     }
     case 'join': {
@@ -230,6 +236,7 @@ function handle(p, m) {
     }
     case 'preset': {                                   // load or import a settings preset (validated and clamped)
       if (!host || !m.set || typeof m.set !== 'object') return;
+      setTeams(L, m.tn, m.tcl);
       for (const k in RANGE) { const v = parseFloat(m.set[k]); if (Number.isFinite(v)) L.set[k] = isFree(L, p) ? v : Math.round(clamp(v, ...RANGE[k]) * 100) / 100; }
       if (L.ph === 'lobby') {                          // map and mode only change between matches
         if (m.cmap) { const c = cleanMap(m.cmap, isFree(L, p)); if (c) { L.cmap = c; L.cv++; L.size = -1; } }
@@ -275,7 +282,12 @@ function handle(p, m) {
       x.players.filter(q => !q.bot).forEach(q => { err(q, 'The lobby was closed by an admin.'); leave(q); }); break;
     }
     case 'a_say': { const s = clean(m.msg, 120, ''); if (s) all.forEach(q => note(q, 'Admin: ' + s)); break; }
-    case 'cos': p.cs = [Math.round(clamp(+m.sh || 0, 0, 8)), Math.round(clamp(+m.shot || 0, 0, 6)), Math.round(clamp(+m.goal || 0, 0, 6))]; if (L) info(L); break;
+    case 'teams': if (host) { setTeams(L, m.n, m.c); info(L); } break;
+    case 'cos': {                                      // shades 0 to 8; effects 0 to 6, or up to 12 for admins (the crazy ones)
+      const mx = p.admin ? 12 : 6;
+      p.cs = [Math.round(clamp(+m.sh || 0, 0, 8)), Math.round(clamp(+m.shot || 0, 0, mx)), Math.round(clamp(+m.goal || 0, 0, mx))];
+      if (L) info(L); break;
+    }
     case 'cmap': {                                     // use a map made in the map maker (only between matches)
       if (!host || L.ph !== 'lobby') return;
       const c = cleanMap(m.map, isFree(L, p)); if (!c) return err(p, 'That map is not valid.');
@@ -348,12 +360,12 @@ function ballWalls(b, M) {
 }
 function finish(L) {
   const g = L.g, [r, b] = g.sc; g.ph = 'over'; g.pt = 300;
-  g.msg = r === b ? 'DRAW' : (r > b ? 'RED' : 'BLUE') + ' WINS!';
+  g.msg = r === b ? 'DRAW' : r > b ? 'WIN0' : 'WIN1';   // the client builds the text from the team names
 }
 function score(L, i) {
-  const g = L.g; g.sc[i]++; g.ev.push([1, g.last || 0, r1(g.ball.x), r1(g.ball.y), i]);
+  const g = L.g; g.sc[i]++; g.ev.push([1, g.last || 0, r1(g.ball.x), r1(g.ball.y), i]); g.who = [g.last || 0, i];
   if (g.sc[i] >= L.set.sc) return finish(L);
-  g.ph = 'goal'; g.pt = 120; g.msg = (i ? 'BLUE' : 'RED') + ' SCORES!';
+  g.ph = 'goal'; g.pt = 120; g.msg = 'GOAL';
 }
 // ---- hazards: saws patrol, spin or roam and lava splats erupt. Touching one demolishes a player for T.dt seconds ----
 function initHaz(L) {
@@ -454,7 +466,7 @@ function step(L) {
   }
   if (ps.length > 8 && (g.n = (g.n || 0) + 1) & 1) return;   // big lobbies: 30 snapshots/s
   cast(L, { t: 's', p: ps.map(p => [p.id, r1(p.x), r1(p.y), (!p.gh && (p.k || p.c) ? 1 : 0) | (p.on ? 2 : 0) | (p.gh ? 4 : 0) | (p.dead ? 8 : 0), Math.round(p.st * 100) / 100, Math.ceil(p.dead / 60)]),
-    b: [r1(b.x), r1(b.y), Math.round(b.sp * 1000) / 1000], h: g.hz.map(hzOut), e: g.ev.length ? g.ev : undefined, s: g.sc, tl: Math.max(0, Math.ceil(g.tl / 60)), ph: g.ph, m: g.msg });
+    b: [r1(b.x), r1(b.y), Math.round(b.sp * 1000) / 1000], h: g.hz.map(hzOut), e: g.ev.length ? g.ev : undefined, s: g.sc, tl: Math.max(0, Math.ceil(g.tl / 60)), ph: g.ph, m: g.msg, w: g.msg === 'GOAL' ? g.who : undefined });
   g.ev = [];
 }
 // fixed 60Hz timestep
